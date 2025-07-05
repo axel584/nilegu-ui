@@ -8,9 +8,6 @@ import {
   Button,
   Paper,
   Chip,
-  ThemeProvider,
-  createTheme,
-  CssBaseline
 } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
@@ -21,25 +18,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2E7D32', // Vert espéranto
-    },
-    secondary: {
-      main: '#1976D2',
-    },
-  },
-  typography: {
-    h2: {
-      fontWeight: 600,
-    },
-    h4: {
-      fontWeight: 500,
-    },
-  },
-});
-
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -48,19 +26,27 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
         {/* Hero Section */}
         <Box
           sx={{
-            background: 'linear-gradient(135deg, #2E7D32 0%, #388E3C 100%)',
+            background: 'linear-gradient(135deg, #554E47 0%, #6B5B47 100%)',
             color: 'white',
             py: 8,
             textAlign: 'center',
           }}
         >
           <Container maxWidth="lg">
+            <Typography 
+              variant="appTitle" 
+              sx={{ 
+                mb: 2,
+                color: 'white',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+              }}
+            >
+              Ni legu
+            </Typography>
             <Typography variant="h2" gutterBottom>
               Apprenez l'espéranto naturellement
             </Typography>
@@ -222,7 +208,7 @@ const HomePage: React.FC = () => {
         </Container>
 
         {/* Call to action */}
-        <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 6 }}>
+        <Box sx={{ bgcolor: '#554E47', color: 'white', py: 6 }}>
           <Container maxWidth="md" sx={{ textAlign: 'center' }}>
             <Typography variant="h4" gutterBottom>
               Prêt à commencer votre voyage ?
@@ -252,7 +238,6 @@ const HomePage: React.FC = () => {
           </Container>
         </Box>
       </Box>
-    </ThemeProvider>
   );
 };
 

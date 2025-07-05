@@ -128,14 +128,14 @@ const TextReaderPage: React.FC = () => {
             }}
             style={{
               cursor: 'pointer',
-              color: hasTranslation ? '#2E7D32' : '#1976d2',
+              color: hasTranslation ? '#554E47' : '#2196F3',
               textDecoration: 'underline',
               textDecorationStyle: 'dotted',
-              textDecorationColor: hasTranslation ? '#2E7D32' : '#1976d2',
+              textDecorationColor: hasTranslation ? '#554E47' : '#2196F3',
               transition: 'background-color 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = hasTranslation ? '#e8f5e8' : '#e3f2fd';
+              e.currentTarget.style.backgroundColor = hasTranslation ? '#f5f5f5' : '#e3f2fd';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -180,7 +180,7 @@ const TextReaderPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* AppBar */}
-      <AppBar position="static" sx={{ bgcolor: '#2E7D32' }}>
+      <AppBar position="static" sx={{ bgcolor: '#554E47' }}>
         <Toolbar>
           <IconButton
             edge="start"
@@ -198,7 +198,7 @@ const TextReaderPage: React.FC = () => {
             size="small"
             sx={{
               bgcolor: 'white',
-              color: '#2E7D32',
+              color: '#554E47',
               fontSize: '0.75rem',
             }}
           />
@@ -281,10 +281,10 @@ const TextReaderPage: React.FC = () => {
         )}
 
         {/* Instructions */}
-        <Paper sx={{ p: 3, mb: 4, bgcolor: '#e8f5e8' }}>
+        <Paper sx={{ p: 3, mb: 4, bgcolor: '#f5f5f5' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <TranslateIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" color="primary.main">
+            <TranslateIcon sx={{ mr: 1, color: '#554E47' }} />
+            <Typography variant="h6" sx={{ color: '#554E47' }}>
               Comment utiliser cette page
             </Typography>
           </Box>

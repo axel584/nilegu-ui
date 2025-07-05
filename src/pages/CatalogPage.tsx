@@ -163,7 +163,7 @@ const CatalogPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* AppBar */}
-      <AppBar position="static" sx={{ bgcolor: '#2E7D32' }}>
+      <AppBar position="static" sx={{ bgcolor: '#554E47' }}>
         <Toolbar>
           <BookIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
