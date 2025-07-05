@@ -1,0 +1,346 @@
+import React, { useState, useRef } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Chip,
+  AppBar,
+  Toolbar,
+  Breadcrumbs,
+  Link,
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent
+} from '@mui/material';
+import {
+  PlayArrow as PlayIcon,
+  Pause as PauseIcon,
+  Stop as StopIcon,
+  VolumeUp as VolumeIcon,
+  ArrowBack as ArrowBackIcon,
+  Translate as TranslateIcon
+} from '@mui/icons-material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useTekstoDetaloj } from '../hooks/useTekstoj';
+import { Vorto } from '../types';
+
+const TextReaderPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { teksto, loading, error } = useTekstoDetaloj(id || null);
+  
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [selectedWord, setSelectedWord] = useState<Vorto | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
+  
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const handleWordClick = (vorto: Vorto) => {
+    setSelectedWord(vorto);
+    setShowTranslation(true);
+  };
+
+  const handleCloseTranslation = () => {
+    setShowTranslation(false);
+    setSelectedWord(null);
+  };
+
+  const handlePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleStop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentTime(0);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const renderText = (text: string, ŝlosilvortoj: string[]) => {
+    // Créer un set pour un accès rapide aux mots-clés
+    const vortoSet = new Set(ŝlosilvortoj.map(v => v.toLowerCase()));
+    
+    // Diviser le texte en mots et ponctuation
+    const words = text.split(/(\s+|[.,!?;:])/);
+    
+    return words.map((word, index) => {
+      const cleanWord = word.replace(/[.,!?;:]/, '').toLowerCase();
+      const isKeyword = vortoSet.has(cleanWord);
+      
+      if (isKeyword && word.trim()) {
+        return (
+          <span
+            key={index}
+            onClick={() => {
+              // Créer un objet Vorto simple pour la compatibilité
+              const vorto: Vorto = {
+                vorto: cleanWord,
+                traduko: `Traduction de "${cleanWord}"`,
+                tipo: 'mots-clés'
+              };
+              handleWordClick(vorto);
+            }}
+            style={{
+              cursor: 'pointer',
+              color: '#1976d2',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dotted',
+              textDecorationColor: '#1976d2',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#e3f2fd';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            {word}
+          </span>
+        );
+      }
+      return <span key={index}>{word}</span>;
+    });
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!teksto) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="warning">
+          Texte non trouvé
+        </Alert>
+      </Container>
+    );
+  }
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+      {/* AppBar */}
+      <AppBar position="static" sx={{ bgcolor: '#2E7D32' }}>
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={() => navigate('/catalog')}
+            sx={{ mr: 2 }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            {teksto.titolo}
+          </Typography>
+          <Chip
+            label={teksto.nivelo}
+            size="small"
+            sx={{
+              bgcolor: 'white',
+              color: '#2E7D32',
+              fontSize: '0.75rem',
+            }}
+          />
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs sx={{ mb: 3 }}>
+          <Link color="inherit" href="/" underline="hover">
+            Accueil
+          </Link>
+          <Link color="inherit" href="/catalog" underline="hover">
+            Catalogue
+          </Link>
+          <Typography color="text.primary">{teksto.titolo}</Typography>
+        </Breadcrumbs>
+
+        {/* Informations du texte */}
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h4" gutterBottom>
+              {teksto.titolo}
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+              par {teksto.aŭtoro}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <Chip label={`${teksto.longeco} mots`} size="small" />
+              <Chip label={teksto.nivelo} size="small" color="primary" />
+            </Box>
+            {teksto.priskribo && (
+              <Typography variant="body2" color="text.secondary">
+                {teksto.priskribo}
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Lecteur audio */}
+        {teksto.audioUrl && (
+          <Paper sx={{ p: 3, mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <VolumeIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Écouter le texte</Typography>
+            </Box>
+            
+            <audio
+              ref={audioRef}
+              src={teksto.audioUrl}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onEnded={handleEnded}
+              style={{ display: 'none' }}
+            />
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton
+                onClick={handlePlayPause}
+                sx={{ 
+                  bgcolor: 'primary.main', 
+                  color: 'white',
+                  '&:hover': { bgcolor: 'primary.dark' }
+                }}
+              >
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </IconButton>
+              
+              <IconButton onClick={handleStop}>
+                <StopIcon />
+              </IconButton>
+              
+              <Box sx={{ flex: 1, ml: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+
+        {/* Instructions */}
+        <Paper sx={{ p: 3, mb: 4, bgcolor: '#e8f5e8' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <TranslateIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6" color="primary.main">
+              Comment utiliser cette page
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Cliquez sur les mots soulignés pour voir leur traduction. 
+            Écoutez l'audio en même temps que vous lisez pour améliorer votre prononciation.
+          </Typography>
+        </Paper>
+
+        {/* Texte */}
+        <Paper sx={{ p: 4 }}>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              lineHeight: 1.8,
+              fontSize: '1.1rem',
+              textAlign: 'justify'
+            }}
+          >
+            {renderText(teksto.enhavo, teksto.ŝlosilvortoj)}
+          </Typography>
+        </Paper>
+      </Container>
+
+      {/* Dialog de traduction */}
+      <Dialog
+        open={showTranslation}
+        onClose={handleCloseTranslation}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TranslateIcon sx={{ mr: 1 }} />
+            Traduction
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedWord && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedWord.vorto}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                <strong>Traduction :</strong> {selectedWord.traduko}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Type :</strong> {selectedWord.tipo}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseTranslation}>
+            Fermer
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+};
+
+export default TextReaderPage; 
