@@ -46,7 +46,31 @@ export const tekstojService = {
     try {
       const response = await api.get(`?path=tekstoj/${id}`);
       console.log('Teksto detaloj response:', response.data);
-      return response.data;
+      
+      // S'assurer que les données sont correctement formatées
+      const data = response.data;
+      if (data && typeof data === 'object') {
+        // Transformer les données pour correspondre à l'interface TextoDetaloj
+        const tekstoDetaloj: TextoDetaloj = {
+          id: data.id || id,
+          titolo: data.titolo || 'Titre inconnu',
+          aŭtoro: data.aŭtoro || data.auxtoro || 'Auteur inconnu',
+          nivelo: data.nivelo || 'Inconnu',
+          longeco: data.longeco || parseInt(data.vortoj) || 0,
+          priskribo: data.priskribo || data.fonto || '',
+          ŝlosilvortoj: data.ŝlosilvortoj || (data.etikedoj ? (data.etikedoj as string).split(',').map((tag: string) => tag.trim()) : []),
+          audioUrl: data.audioUrl || null,
+          enhavo: Array.isArray(data.enhavo) ? data.enhavo.map((section: any) => section.teksto).join('\n\n') : (data.enhavo || data.contenu || ''),
+          traduko: data.traduko || undefined,
+          notoj: data.notoj || undefined,
+          vortaro: Array.isArray(data.enhavo) ? data.enhavo.reduce((acc: any, section: any) => ({ ...acc, ...section.vortaro }), {}) : (data.vortaro || undefined)
+        };
+        
+        console.log('Transformed teksto detaloj:', tekstoDetaloj);
+        return tekstoDetaloj;
+      }
+      
+      throw new Error('Format de données invalide');
     } catch (error) {
       console.error(`Erreur lors de la récupération du texte ${id}:`, error);
       throw new Error(`Impossible de récupérer le texte ${id}`);

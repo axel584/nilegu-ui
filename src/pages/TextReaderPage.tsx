@@ -98,9 +98,12 @@ const TextReaderPage: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const renderText = (text: string, ŝlosilvortoj: string[]) => {
+  const renderText = (text: string, ŝlosilvortoj: string[], vortaro?: { [key: string]: string }) => {
+    // S'assurer que ŝlosilvortoj est un tableau
+    const vortoj = Array.isArray(ŝlosilvortoj) ? ŝlosilvortoj : [];
+    
     // Créer un set pour un accès rapide aux mots-clés
-    const vortoSet = new Set(ŝlosilvortoj.map(v => v.toLowerCase()));
+    const vortoSet = new Set(vortoj.map(v => v.toLowerCase()));
     
     // Diviser le texte en mots et ponctuation
     const words = text.split(/(\s+|[.,!?;:])/);
@@ -108,30 +111,31 @@ const TextReaderPage: React.FC = () => {
     return words.map((word, index) => {
       const cleanWord = word.replace(/[.,!?;:]/, '').toLowerCase();
       const isKeyword = vortoSet.has(cleanWord);
+      const hasTranslation = vortaro && vortaro[cleanWord];
       
-      if (isKeyword && word.trim()) {
+      if ((isKeyword || hasTranslation) && word.trim()) {
         return (
           <span
             key={index}
             onClick={() => {
-              // Créer un objet Vorto simple pour la compatibilité
+              // Créer un objet Vorto avec la vraie traduction si disponible
               const vorto: Vorto = {
                 vorto: cleanWord,
-                traduko: `Traduction de "${cleanWord}"`,
-                tipo: 'mots-clés'
+                traduko: hasTranslation ? vortaro[cleanWord] : `Traduction de "${cleanWord}"`,
+                tipo: hasTranslation ? 'dictionnaire' : 'mots-clés'
               };
               handleWordClick(vorto);
             }}
             style={{
               cursor: 'pointer',
-              color: '#1976d2',
+              color: hasTranslation ? '#2E7D32' : '#1976d2',
               textDecoration: 'underline',
               textDecorationStyle: 'dotted',
-              textDecorationColor: '#1976d2',
+              textDecorationColor: hasTranslation ? '#2E7D32' : '#1976d2',
               transition: 'background-color 0.2s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e3f2fd';
+              e.currentTarget.style.backgroundColor = hasTranslation ? '#e8f5e8' : '#e3f2fd';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -300,7 +304,7 @@ const TextReaderPage: React.FC = () => {
               textAlign: 'justify'
             }}
           >
-            {renderText(teksto.enhavo, teksto.ŝlosilvortoj)}
+            {renderText(teksto.enhavo, teksto.ŝlosilvortoj || [], teksto.vortaro)}
           </Typography>
         </Paper>
       </Container>
