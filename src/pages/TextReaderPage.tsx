@@ -98,6 +98,41 @@ const TextReaderPage: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const getNiveloColor = (nivelo: string | number) => {
+    const niveauNum = typeof nivelo === 'string' ? parseInt(nivelo, 10) : nivelo;
+    if (niveauNum >= 0 && niveauNum <= 999) {
+      return '#4CAF50'; // Vert pour facile
+    } else if (niveauNum >= 1000 && niveauNum <= 1999) {
+      return '#FF9800'; // Orange pour intermédiaire
+    } else if (niveauNum >= 2000) {
+      return '#F44336'; // Rouge pour avancé
+    }
+    return '#757575'; // Gris par défaut
+  };
+
+  const getNiveloLabel = (nivelo: string | number) => {
+    const niveauNum = typeof nivelo === 'string' ? parseInt(nivelo, 10) : nivelo;
+    
+    if (niveauNum >= 0 && niveauNum <= 999) {
+      return 'Facile';
+    } else if (niveauNum >= 1000 && niveauNum <= 1999) {
+      return 'Intermédiaire';
+    } else if (niveauNum >= 2000) {
+      return 'Avancé';
+    }
+    
+    return nivelo; // Retourne la valeur originale si elle ne correspond à aucun critère
+  };
+
+  const isUrl = (text: string) => {
+    try {
+      new URL(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const renderText = (text: string, ŝlosilvortoj: string[], vortaro?: { [key: string]: string }) => {
     // S'assurer que ŝlosilvortoj est un tableau
     const vortoj = Array.isArray(ŝlosilvortoj) ? ŝlosilvortoj : [];
@@ -194,11 +229,11 @@ const TextReaderPage: React.FC = () => {
             {teksto.titolo}
           </Typography>
           <Chip
-            label={teksto.nivelo}
+            label={getNiveloLabel(teksto.nivelo)}
             size="small"
             sx={{
-              bgcolor: 'white',
-              color: '#554E47',
+              bgcolor: getNiveloColor(teksto.nivelo),
+              color: 'white',
               fontSize: '0.75rem',
             }}
           />
@@ -228,11 +263,29 @@ const TextReaderPage: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <Chip label={`${teksto.longeco} mots`} size="small" />
-              <Chip label={teksto.nivelo} size="small" color="primary" />
+              <Chip 
+                label={getNiveloLabel(teksto.nivelo)} 
+                size="small" 
+                sx={{
+                  bgcolor: getNiveloColor(teksto.nivelo),
+                  color: 'white',
+                }}
+              />
             </Box>
             {teksto.priskribo && (
               <Typography variant="body2" color="text.secondary">
-                {teksto.priskribo}
+                {isUrl(teksto.priskribo) ? (
+                  <Link
+                    href={teksto.priskribo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                  >
+                    {teksto.priskribo}
+                  </Link>
+                ) : (
+                  teksto.priskribo
+                )}
               </Typography>
             )}
           </CardContent>

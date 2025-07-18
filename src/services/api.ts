@@ -82,8 +82,77 @@ export const tekstojService = {
   // Rechercher des textes avec filtres
   searchTekstoj: async (filtroj: any): Promise<Texto[]> => {
     try {
-      const response = await api.get('?path=tekstoj', { params: filtroj });
-      return response.data;
+      // Transformer les filtres pour correspondre aux noms attendus par l'API
+      const apiParams: any = {};
+      
+      if (filtroj.serĉo && filtroj.serĉo.trim() !== '') {
+        apiParams.q = filtroj.serĉo; // paramètre de recherche
+      }
+      
+      if (filtroj.nivelo && filtroj.nivelo.trim() !== '') {
+        // Transformer les valeurs de niveau en plages numériques
+        switch (filtroj.nivelo) {
+          case 'facile':
+            apiParams.nivelo_min = 0;
+            apiParams.nivelo_max = 999;
+            break;
+          case 'intermediaire':
+            apiParams.nivelo_min = 1000;
+            apiParams.nivelo_max = 1999;
+            break;
+          case 'avance':
+            apiParams.nivelo_min = 2000;
+            apiParams.nivelo_max = 9999; // ou une valeur très élevée
+            break;
+          default:
+            // Si c'est une valeur numérique directe, l'utiliser telle quelle
+            if (!isNaN(parseInt(filtroj.nivelo))) {
+              apiParams.nivelo = filtroj.nivelo;
+            }
+        }
+      }
+      
+      if (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') {
+        apiParams.auxtoro = filtroj.aŭtoro; // L'API utilise 'auxtoro'
+      }
+      
+      if (filtroj.longecoMin > 0 || filtroj.longecoMax < 1000) {
+        apiParams.vortoj_min = filtroj.longecoMin;
+        apiParams.vortoj_max = filtroj.longecoMax;
+      }
+      
+      if (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0) {
+        apiParams.etikedoj = filtroj.ŝlosilvortoj.join(',');
+      }
+      
+      console.log('API params:', apiParams);
+      
+      // Si aucun paramètre n'est défini, faire un appel sans filtres pour récupérer tous les textes
+      const hasParams = Object.keys(apiParams).length > 0;
+      const response = await api.get('?path=tekstoj', hasParams ? { params: apiParams } : {});
+      
+      console.log('Search API Response:', response.data);
+      
+      // L'API retourne un objet avec une propriété 'data' contenant le tableau
+      if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
+        // Transformer les données pour correspondre à notre interface Texto
+        const tekstoj = response.data.data.map((item: APITeksto) => ({
+          id: item.id,
+          titolo: item.titolo,
+          aŭtoro: item.auxtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
+          nivelo: item.nivelo,
+          longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
+          priskribo: item.fonto, // Utiliser la source comme description
+          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
+          audioUrl: null // L'API ne semble pas fournir d'URL audio dans cette liste
+        }));
+        
+        console.log('Transformed search data:', tekstoj);
+        return tekstoj;
+      }
+      
+      console.warn('Format de données non reconnu, retour d\'un tableau vide');
+      return [];
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       throw new Error('Impossible de rechercher les textes');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -32,12 +32,12 @@ import {
   FilterList as FilterIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useTekstoj } from '../hooks/useTekstoj';
-import { Texto, Filtroj } from '../types';
+import { useTekstojSearch } from '../hooks/useTekstoj';
+import { Filtroj } from '../types';
 
 const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
-  const { tekstoj, loading, error } = useTekstoj();
+  const { tekstoj, loading, error, searchTekstoj } = useTekstojSearch();
   
   const [filtroj, setFiltroj] = useState<Filtroj>({
     serĉo: '',
@@ -48,46 +48,28 @@ const CatalogPage: React.FC = () => {
     ŝlosilvortoj: []
   });
 
-  const [tekstojFiltritaj, setTekstojFiltritaj] = useState<Texto[]>([]);
-
-  // S'assurer que tekstoj est un tableau avec useMemo pour éviter les re-renders
-  const tekstojArray = useMemo(() => Array.isArray(tekstoj) ? tekstoj : [], [tekstoj]);
-
-  // Appliquer les filtres
+  // Faire une requête API quand les filtres changent
   useEffect(() => {
-    if (tekstojArray.length > 0) {
-      let filtrataj = tekstojArray;
+    // Vérifier si des filtres sont appliqués (en excluant les valeurs vides)
+    const hasFilters = (filtroj.serĉo && filtroj.serĉo.trim() !== '') || 
+                      (filtroj.nivelo && filtroj.nivelo.trim() !== '') || 
+                      (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') || 
+                      filtroj.longecoMin > 0 || filtroj.longecoMax < 1000 || 
+                      (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0);
 
-      // Filtre par recherche (titre, auteur, mots-clés)
-      if (filtroj.serĉo) {
-        const serĉo = filtroj.serĉo.toLowerCase();
-        filtrataj = filtrataj.filter(teksto => 
-          teksto.titolo.toLowerCase().includes(serĉo) ||
-          teksto.aŭtoro.toLowerCase().includes(serĉo) ||
-          teksto.ŝlosilvortoj?.some(vorto => vorto.toLowerCase().includes(serĉo))
-        );
-      }
+    // Vérifier si on est revenu aux valeurs par défaut (pas de filtres)
+    const isDefaultState = (!filtroj.serĉo || filtroj.serĉo.trim() === '') && 
+                          (!filtroj.nivelo || filtroj.nivelo.trim() === '') && 
+                          (!filtroj.aŭtoro || filtroj.aŭtoro.trim() === '') && 
+                          filtroj.longecoMin === 0 && filtroj.longecoMax === 1000 && 
+                          (!filtroj.ŝlosilvortoj || filtroj.ŝlosilvortoj.length === 0);
 
-      // Filtre par niveau
-      if (filtroj.nivelo) {
-        filtrataj = filtrataj.filter(teksto => teksto.nivelo === filtroj.nivelo);
-      }
-
-      // Filtre par auteur
-      if (filtroj.aŭtoro) {
-        filtrataj = filtrataj.filter(teksto => teksto.aŭtoro === filtroj.aŭtoro);
-      }
-
-      // Filtre par longueur
-      filtrataj = filtrataj.filter(teksto => 
-        teksto.longeco >= filtroj.longecoMin && teksto.longeco <= filtroj.longecoMax
-      );
-
-      setTekstojFiltritaj(filtrataj);
-    } else {
-      setTekstojFiltritaj([]);
-    }
-  }, [tekstojArray, filtroj]);
+    // Faire une requête dans tous les cas pour s'assurer que les données sont à jour
+    const timeoutId = setTimeout(() => {
+      searchTekstoj(filtroj);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [filtroj, searchTekstoj]);
 
   const handleSerĉoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFiltroj(prev => ({ ...prev, serĉo: event.target.value }));
@@ -121,25 +103,31 @@ const CatalogPage: React.FC = () => {
     navigate(`/teksto/${tekstoId}`);
   };
 
-  // Obtenir les listes uniques pour les filtres
-  const niveloj = Array.from(new Set(tekstojArray.map(t => t.nivelo))).sort();
-  const aŭtoroj = Array.from(new Set(tekstojArray.map(t => t.aŭtoro))).sort();
+  // Obtenir les listes uniques pour les filtres (pour les options des selects)
+  const aŭtoroj = Array.from(new Set(tekstoj.map(t => t.aŭtoro))).sort();
 
   const getNiveloColor = (nivelo: string) => {
-    switch (nivelo.toLowerCase()) {
-      case 'komencanto':
-      case 'débutant':
-      case '27': // Niveau de l'API
-        return '#4CAF50';
-      case 'meznivela':
-      case 'intermédiaire':
-        return '#FF9800';
-      case 'alta':
-      case 'avancé':
-        return '#F44336';
-      default:
-        return '#757575';
+    const niveloNum = parseInt(nivelo);
+    if (niveloNum >= 0 && niveloNum <= 999) {
+      return '#4CAF50'; // Vert pour facile
+    } else if (niveloNum >= 1000 && niveloNum <= 1999) {
+      return '#FF9800'; // Orange pour intermédiaire
+    } else if (niveloNum >= 2000) {
+      return '#F44336'; // Rouge pour avancé
     }
+    return '#757575'; // Gris par défaut
+  };
+
+  const getNiveloLabel = (nivelo: string) => {
+    const niveloNum = parseInt(nivelo);
+    if (niveloNum >= 0 && niveloNum <= 999) {
+      return 'Facile';
+    } else if (niveloNum >= 1000 && niveloNum <= 1999) {
+      return 'Intermédiaire';
+    } else if (niveloNum >= 2000) {
+      return 'Avancé';
+    }
+    return nivelo;
   };
 
   if (loading) {
@@ -226,11 +214,9 @@ const CatalogPage: React.FC = () => {
                   onChange={handleNiveloChange}
                 >
                   <MenuItem value="">Tous les niveaux</MenuItem>
-                  {niveloj.map(nivelo => (
-                    <MenuItem key={nivelo} value={nivelo}>
-                      {nivelo}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="facile">Facile</MenuItem>
+                  <MenuItem value="intermediaire">Intermédiaire</MenuItem>
+                  <MenuItem value="avance">Avancé</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -287,13 +273,13 @@ const CatalogPage: React.FC = () => {
         {/* Résultats */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" gutterBottom>
-            {tekstojFiltritaj.length} texte{tekstojFiltritaj.length !== 1 ? 's' : ''} trouvé{tekstojFiltritaj.length !== 1 ? 's' : ''}
+            {tekstoj.length} texte{tekstoj.length !== 1 ? 's' : ''} trouvé{tekstoj.length !== 1 ? 's' : ''}
           </Typography>
         </Box>
 
         {/* Liste des textes */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {tekstojFiltritaj.map((teksto) => (
+          {tekstoj.map((teksto) => (
             <Box sx={{ flex: '1 1 350px', minWidth: 0 }} key={teksto.id}>
               <Card 
                 sx={{ 
@@ -313,7 +299,7 @@ const CatalogPage: React.FC = () => {
                       {teksto.titolo}
                     </Typography>
                     <Chip
-                      label={teksto.nivelo}
+                      label={getNiveloLabel(teksto.nivelo)}
                       size="small"
                       sx={{
                         bgcolor: getNiveloColor(teksto.nivelo),
@@ -373,7 +359,7 @@ const CatalogPage: React.FC = () => {
           ))}
         </Box>
 
-        {tekstojFiltritaj.length === 0 && !loading && (
+        {tekstoj.length === 0 && !loading && (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               Aucun texte trouvé

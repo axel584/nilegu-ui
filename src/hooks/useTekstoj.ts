@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Texto, TextoDetaloj, Filtroj } from '../types';
 import { tekstojService } from '../services/api';
 
@@ -67,10 +67,33 @@ export const useTekstoDetaloj = (id: string | null) => {
 
 export const useTekstojSearch = () => {
   const [tekstoj, setTekstoj] = useState<Texto[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const searchTekstoj = async (filtroj: Filtroj) => {
+  const fetchAllTekstoj = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await tekstojService.getTekstoj();
+      
+      // S'assurer que les données sont un tableau
+      if (Array.isArray(data)) {
+        setTekstoj(data);
+      } else if (data && typeof data === 'object' && 'tekstoj' in data && Array.isArray((data as any).tekstoj)) {
+        setTekstoj((data as any).tekstoj);
+      } else {
+        console.warn('Format de données inattendu:', data);
+        setTekstoj([]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setTekstoj([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const searchTekstoj = useCallback(async (filtroj: Filtroj) => {
     try {
       setLoading(true);
       setError(null);
@@ -91,7 +114,12 @@ export const useTekstojSearch = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  return { tekstoj, loading, error, searchTekstoj };
+  // Charger tous les textes au démarrage
+  useEffect(() => {
+    fetchAllTekstoj();
+  }, [fetchAllTekstoj]);
+
+  return { tekstoj, loading, error, searchTekstoj, refetch: fetchAllTekstoj };
 }; 
