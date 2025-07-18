@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Texto, TextoDetaloj, APITeksto } from '../types';
 
-const API_BASE_URL = 'https://ikurso.esperanto-france.org/api.php';
+//const API_BASE_URL = 'https://ikurso.esperanto-france.org/api.php';
+const API_BASE_URL = 'http://localhost:8080/api.php';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -59,7 +60,8 @@ export const tekstojService = {
           longeco: data.longeco || parseInt(data.vortoj) || 0,
           priskribo: data.priskribo || data.fonto || '',
           ŝlosilvortoj: data.ŝlosilvortoj || (data.etikedoj ? (data.etikedoj as string).split(',').map((tag: string) => tag.trim()) : []),
-          audioUrl: data.audioUrl || null,
+          audioUrl: data.sono || data.audioUrl || null, // Utiliser le champ "sono" de l'API
+          sono: data.sono || null, // Garder aussi le champ original
           enhavo: Array.isArray(data.enhavo) ? data.enhavo.map((section: any) => section.teksto).join('\n\n') : (data.enhavo || data.contenu || ''),
           traduko: data.traduko || undefined,
           notoj: data.notoj || undefined,

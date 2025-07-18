@@ -239,7 +239,7 @@ const TextReaderPage: React.FC = () => {
         </Card>
 
         {/* Lecteur audio */}
-        {teksto.audioUrl && (
+        {teksto.sono && teksto.sono.trim() !== '' && (
           <Paper sx={{ p: 3, mb: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <VolumeIcon sx={{ mr: 1 }} />
@@ -248,7 +248,7 @@ const TextReaderPage: React.FC = () => {
             
             <audio
               ref={audioRef}
-              src={teksto.audioUrl}
+              src={teksto.sono}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               onEnded={handleEnded}
@@ -330,9 +330,6 @@ const TextReaderPage: React.FC = () => {
               </Typography>
               <Typography variant="body1" color="text.secondary" gutterBottom>
                 <strong>Traduction :</strong> {selectedWord.traduko}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                <strong>Type :</strong> {selectedWord.tipo}
               </Typography>
             </Box>
           )}

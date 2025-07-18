@@ -9,6 +9,7 @@ export interface Texto {
   priskribo?: string;
   ŝlosilvortoj: string[];
   audioUrl?: string | null;
+  sono?: string | null; // URL du fichier audio MP3
 }
 
 export interface TextoDetaloj extends Texto {

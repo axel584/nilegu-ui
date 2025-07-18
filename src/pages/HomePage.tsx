@@ -48,7 +48,7 @@ const HomePage: React.FC = () => {
               Ni legu
             </Typography>
             <Typography variant="h2" gutterBottom>
-              Apprenez l'espéranto naturellement
+              Lire, comprendre, apprendre
             </Typography>
             <Typography variant="h5" sx={{ mb: 4, opacity: 0.9 }}>
               Découvrez une langue internationale à travers des histoires captivantes
