@@ -47,7 +47,7 @@ export interface APITeksto {
 }
 
 export interface APIResponse {
-  data: APITeksto[];
+  data: Texto[];
   pagination: {
     total: number;
     limit: number;

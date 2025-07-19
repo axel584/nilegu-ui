@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { Texto, TextoDetaloj, APITeksto } from '../types';
+import { Texto, TextoDetaloj, APITeksto, APIResponse } from '../types';
 
-//const API_BASE_URL = 'https://ikurso.esperanto-france.org/api.php';
-const API_BASE_URL = 'http://localhost:8080/api.php';
+const API_BASE_URL = 'https://ikurso.esperanto-france.org/api.php';
+//const API_BASE_URL = 'http://localhost:8080/api.php';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -80,10 +80,12 @@ export const tekstojService = {
   },
 
   // Rechercher des textes avec filtres
-  searchTekstoj: async (filtroj: any): Promise<Texto[]> => {
+  searchTekstoj: async (filtroj: any, offset: number = 0): Promise<APIResponse> => {
     try {
       // Transformer les filtres pour correspondre aux noms attendus par l'API
-      const apiParams: any = {};
+      const apiParams: any = {
+        offset: offset
+      };
       
       if (filtroj.serĉo && filtroj.serĉo.trim() !== '') {
         apiParams.q = filtroj.serĉo; // paramètre de recherche
@@ -127,15 +129,14 @@ export const tekstojService = {
       
       console.log('API params:', apiParams);
       
-      // Si aucun paramètre n'est défini, faire un appel sans filtres pour récupérer tous les textes
-      const hasParams = Object.keys(apiParams).length > 0;
-      const response = await api.get('?path=tekstoj', hasParams ? { params: apiParams } : {});
+      // Toujours utiliser les paramètres avec offset pour la pagination
+      const response = await api.get('?path=tekstoj', { params: apiParams });
       
       console.log('Search API Response:', response.data);
       
       // L'API retourne un objet avec une propriété 'data' contenant le tableau
       if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
-        // Transformer les données pour correspondre à notre interface Texto
+        // Transformer les données APITeksto vers Texto
         const tekstoj = response.data.data.map((item: APITeksto) => ({
           id: item.id,
           titolo: item.titolo,
@@ -148,11 +149,29 @@ export const tekstojService = {
         }));
         
         console.log('Transformed search data:', tekstoj);
-        return tekstoj;
+        
+        // Retourner la structure APIResponse avec pagination
+        return {
+          data: tekstoj,
+          pagination: response.data.pagination || {
+            total: tekstoj.length,
+            limit: 20,
+            offset: offset,
+            count: tekstoj.length
+          }
+        };
       }
       
       console.warn('Format de données non reconnu, retour d\'un tableau vide');
-      return [];
+      return {
+        data: [],
+        pagination: {
+          total: 0,
+          limit: 20,
+          offset: offset,
+          count: 0
+        }
+      };
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       throw new Error('Impossible de rechercher les textes');

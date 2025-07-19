@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Texto, TextoDetaloj, Filtroj } from '../types';
+import { Texto, TextoDetaloj, Filtroj, APIResponse, APITeksto } from '../types';
 import { tekstojService } from '../services/api';
 
 export const useTekstoj = () => {
@@ -69,6 +69,13 @@ export const useTekstojSearch = () => {
   const [tekstoj, setTekstoj] = useState<Texto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    limit: 20,
+    offset: 0,
+    count: 0
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchAllTekstoj = useCallback(async () => {
     try {
@@ -79,47 +86,111 @@ export const useTekstojSearch = () => {
       // S'assurer que les données sont un tableau
       if (Array.isArray(data)) {
         setTekstoj(data);
+        setPagination({
+          total: data.length,
+          limit: data.length,
+          offset: 0,
+          count: data.length
+        });
       } else if (data && typeof data === 'object' && 'tekstoj' in data && Array.isArray((data as any).tekstoj)) {
         setTekstoj((data as any).tekstoj);
+        setPagination({
+          total: (data as any).tekstoj.length,
+          limit: (data as any).tekstoj.length,
+          offset: 0,
+          count: (data as any).tekstoj.length
+        });
       } else {
         console.warn('Format de données inattendu:', data);
         setTekstoj([]);
+        setPagination({
+          total: 0,
+          limit: 20,
+          offset: 0,
+          count: 0
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setTekstoj([]);
+      setPagination({
+        total: 0,
+        limit: 20,
+        offset: 0,
+        count: 0
+      });
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
   }, []);
 
-  const searchTekstoj = useCallback(async (filtroj: Filtroj) => {
+  const searchTekstoj = useCallback(async (filtroj: Filtroj, offset: number = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await tekstojService.searchTekstoj(filtroj);
+      const data = await tekstojService.searchTekstoj(filtroj, offset);
       
-      // S'assurer que les données sont un tableau
-      if (Array.isArray(data)) {
-        setTekstoj(data);
-      } else if (data && typeof data === 'object' && 'tekstoj' in data && Array.isArray((data as any).tekstoj)) {
-        setTekstoj((data as any).tekstoj);
+      // Le service searchTekstoj retourne déjà un objet APIResponse avec des données transformées
+      if (data && typeof data === 'object' && 'data' in data && 'pagination' in data) {
+        const apiResponse = data as APIResponse;
+        // Les données sont déjà transformées en Texto par le service
+        setTekstoj(apiResponse.data);
+        setPagination(apiResponse.pagination);
+      } else if (Array.isArray(data)) {
+        // Fallback si on reçoit directement un tableau
+        setTekstoj(data as Texto[]);
+        setPagination({
+          total: (data as any[]).length,
+          limit: (data as any[]).length,
+          offset: 0,
+          count: (data as any[]).length
+        });
       } else {
         console.warn('Format de données inattendu:', data);
         setTekstoj([]);
+        setPagination({
+          total: 0,
+          limit: 20,
+          offset: 0,
+          count: 0
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setTekstoj([]);
+      setPagination({
+        total: 0,
+        limit: 20,
+        offset: 0,
+        count: 0
+      });
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Charger tous les textes au démarrage
+  // Charger tous les textes au démarrage seulement si pas encore initialisé
   useEffect(() => {
-    fetchAllTekstoj();
-  }, [fetchAllTekstoj]);
+    if (!isInitialized) {
+      // Utiliser la recherche sans filtres avec pagination au lieu de fetchAllTekstoj
+      searchTekstoj({
+        serĉo: '',
+        nivelo: '',
+        aŭtoro: '',
+        longecoMin: 0,
+        longecoMax: 1000,
+        ŝlosilvortoj: []
+      }, 0);
+    }
+  }, [searchTekstoj, isInitialized]);
 
-  return { tekstoj, loading, error, searchTekstoj, refetch: fetchAllTekstoj };
+  return { 
+    tekstoj, 
+    loading, 
+    error, 
+    pagination,
+    searchTekstoj, 
+    refetch: fetchAllTekstoj 
+  };
 }; 

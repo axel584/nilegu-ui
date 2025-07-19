@@ -21,7 +21,8 @@ import {
   AppBar,
   Toolbar,
   Breadcrumbs,
-  Link
+  Link,
+  Pagination
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -37,7 +38,7 @@ import { Filtroj } from '../types';
 
 const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
-  const { tekstoj, loading, error, searchTekstoj } = useTekstojSearch();
+  const { tekstoj, loading, error, pagination, searchTekstoj, refetch: fetchAllTekstoj } = useTekstojSearch();
   
   const [filtroj, setFiltroj] = useState<Filtroj>({
     serĉo: '',
@@ -48,7 +49,40 @@ const CatalogPage: React.FC = () => {
     ŝlosilvortoj: []
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Faire une requête API quand les filtres changent
+  useEffect(() => {
+    // Réinitialiser la page à 1 quand les filtres changent
+    setCurrentPage(1);
+    
+    // Vérifier si des filtres sont appliqués (en excluant les valeurs vides)
+    const hasFilters = (filtroj.serĉo && filtroj.serĉo.trim() !== '') || 
+                      (filtroj.nivelo && filtroj.nivelo.trim() !== '') || 
+                      (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') || 
+                      filtroj.longecoMin > 0 || filtroj.longecoMax < 1000 || 
+                      (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0);
+
+    const timeoutId = setTimeout(() => {
+      // Toujours utiliser offset 0 car on a réinitialisé currentPage à 1
+      if (hasFilters) {
+        searchTekstoj(filtroj, 0);
+      } else {
+        // Si pas de filtres, utiliser la recherche sans filtres avec pagination
+        searchTekstoj({
+          serĉo: '',
+          nivelo: '',
+          aŭtoro: '',
+          longecoMin: 0,
+          longecoMax: 1000,
+          ŝlosilvortoj: []
+        }, 0);
+      }
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [filtroj, searchTekstoj]);
+
+  // Gérer les changements de page séparément
   useEffect(() => {
     // Vérifier si des filtres sont appliqués (en excluant les valeurs vides)
     const hasFilters = (filtroj.serĉo && filtroj.serĉo.trim() !== '') || 
@@ -57,19 +91,22 @@ const CatalogPage: React.FC = () => {
                       filtroj.longecoMin > 0 || filtroj.longecoMax < 1000 || 
                       (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0);
 
-    // Vérifier si on est revenu aux valeurs par défaut (pas de filtres)
-    const isDefaultState = (!filtroj.serĉo || filtroj.serĉo.trim() === '') && 
-                          (!filtroj.nivelo || filtroj.nivelo.trim() === '') && 
-                          (!filtroj.aŭtoro || filtroj.aŭtoro.trim() === '') && 
-                          filtroj.longecoMin === 0 && filtroj.longecoMax === 1000 && 
-                          (!filtroj.ŝlosilvortoj || filtroj.ŝlosilvortoj.length === 0);
-
-    // Faire une requête dans tous les cas pour s'assurer que les données sont à jour
-    const timeoutId = setTimeout(() => {
-      searchTekstoj(filtroj);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [filtroj, searchTekstoj]);
+    const offset = (currentPage - 1) * pagination.limit;
+    
+    if (hasFilters) {
+      searchTekstoj(filtroj, offset);
+    } else {
+      // Si pas de filtres, utiliser la recherche sans filtres avec pagination
+      searchTekstoj({
+        serĉo: '',
+        nivelo: '',
+        aŭtoro: '',
+        longecoMin: 0,
+        longecoMax: 1000,
+        ŝlosilvortoj: []
+      }, offset);
+    }
+  }, [currentPage, filtroj, searchTekstoj, pagination.limit]);
 
   const handleSerĉoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setFiltroj(prev => ({ ...prev, serĉo: event.target.value }));
@@ -97,11 +134,28 @@ const CatalogPage: React.FC = () => {
       longecoMax: 1000,
       ŝlosilvortoj: []
     });
+    setCurrentPage(1);
+    // Utiliser la recherche sans filtres avec pagination
+    searchTekstoj({
+      serĉo: '',
+      nivelo: '',
+      aŭtoro: '',
+      longecoMin: 0,
+      longecoMax: 1000,
+      ŝlosilvortoj: []
+    }, 0);
+  };
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, page: number) => {
+    setCurrentPage(page);
   };
 
   const handleTekstoClick = (tekstoId: string) => {
     navigate(`/teksto/${tekstoId}`);
   };
+
+  // Calculer le nombre total de pages
+  const totalPages = Math.ceil(pagination.total / pagination.limit);
 
   // Obtenir les listes uniques pour les filtres (pour les options des selects)
   const aŭtoroj = Array.from(new Set(tekstoj.map(t => t.aŭtoro))).sort();
@@ -273,7 +327,12 @@ const CatalogPage: React.FC = () => {
         {/* Résultats */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" gutterBottom>
-            {tekstoj.length} texte{tekstoj.length !== 1 ? 's' : ''} trouvé{tekstoj.length !== 1 ? 's' : ''}
+            {pagination.total} texte{pagination.total !== 1 ? 's' : ''} trouvé{pagination.total !== 1 ? 's' : ''}
+            {pagination.total > pagination.limit && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Affichage de {pagination.offset + 1} à {pagination.offset + pagination.count} sur {pagination.total} résultats
+              </Typography>
+            )}
           </Typography>
         </Box>
 
@@ -358,6 +417,21 @@ const CatalogPage: React.FC = () => {
             </Box>
           ))}
         </Box>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
 
         {tekstoj.length === 0 && !loading && (
           <Box sx={{ textAlign: 'center', py: 8 }}>

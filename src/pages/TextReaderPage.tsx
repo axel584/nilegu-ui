@@ -164,8 +164,6 @@ const TextReaderPage: React.FC = () => {
             style={{
               cursor: 'pointer',
               color: hasTranslation ? '#554E47' : '#2196F3',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dotted',
               textDecorationColor: hasTranslation ? '#554E47' : '#2196F3',
               transition: 'background-color 0.2s',
             }}
