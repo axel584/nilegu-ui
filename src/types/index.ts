@@ -13,7 +13,7 @@ export interface Texto {
 }
 
 export interface TextoDetaloj extends Texto {
-  enhavo: string;
+  enhavo: string | string[];
   traduko?: string;
   notoj?: string;
   vortaro?: { [key: string]: string };

@@ -133,52 +133,69 @@ const TextReaderPage: React.FC = () => {
     }
   };
 
-  const renderText = (text: string, ŝlosilvortoj: string[], vortaro?: { [key: string]: string }) => {
+  const renderText = (textArray: string[] | string, ŝlosilvortoj: string[], vortaro?: { [key: string]: string }) => {
     // S'assurer que ŝlosilvortoj est un tableau
     const vortoj = Array.isArray(ŝlosilvortoj) ? ŝlosilvortoj : [];
     
     // Créer un set pour un accès rapide aux mots-clés
     const vortoSet = new Set(vortoj.map(v => v.toLowerCase()));
     
-    // Diviser le texte en mots et ponctuation
-    const words = text.split(/(\s+|[.,!?;:])/);
+    // Convertir en tableau si c'est une chaîne
+    const texts = Array.isArray(textArray) ? textArray : [textArray];
     
-    return words.map((word, index) => {
-      const cleanWord = word.replace(/[.,!?;:]/, '').toLowerCase();
-      const isKeyword = vortoSet.has(cleanWord);
-      const hasTranslation = vortaro && vortaro[cleanWord];
-      
-      if ((isKeyword || hasTranslation) && word.trim()) {
-        return (
-          <span
-            key={index}
-            onClick={() => {
-              // Créer un objet Vorto avec la vraie traduction si disponible
-              const vorto: Vorto = {
-                vorto: cleanWord,
-                traduko: hasTranslation ? vortaro[cleanWord] : `Traduction de "${cleanWord}"`,
-                tipo: hasTranslation ? 'dictionnaire' : 'mots-clés'
-              };
-              handleWordClick(vorto);
-            }}
-            style={{
-              cursor: 'pointer',
-              color: hasTranslation ? '#554E47' : '#2196F3',
-              textDecorationColor: hasTranslation ? '#554E47' : '#2196F3',
-              transition: 'background-color 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = hasTranslation ? '#f5f5f5' : '#e3f2fd';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            {word}
-          </span>
-        );
+    return texts.map((text, textIndex) => {
+      // Ignorer les textes vides
+      if (!text || !text.trim()) {
+        return null;
       }
-      return <span key={index}>{word}</span>;
+      
+      // Diviser le texte en mots et ponctuation
+      const words = text.split(/(\s+|[.,!?;:])/);
+      
+      const paragraphContent = words.map((word, index) => {
+        const cleanWord = word.replace(/[.,!?;:]/, '').toLowerCase();
+        const isKeyword = vortoSet.has(cleanWord);
+        const hasTranslation = vortaro && vortaro[cleanWord];
+        
+        if ((isKeyword || hasTranslation) && word.trim()) {
+          return (
+            <span
+              key={`${textIndex}-${index}`}
+              onClick={() => {
+                // Créer un objet Vorto avec la vraie traduction si disponible
+                const vorto: Vorto = {
+                  vorto: cleanWord,
+                  traduko: hasTranslation ? vortaro[cleanWord] : `Traduction de "${cleanWord}"`,
+                  tipo: hasTranslation ? 'dictionnaire' : 'mots-clés'
+                };
+                handleWordClick(vorto);
+              }}
+              style={{
+                cursor: 'pointer',
+                color: hasTranslation ? '#554E47' : '#2196F3',
+                textDecorationColor: hasTranslation ? '#554E47' : '#2196F3',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = hasTranslation ? '#f5f5f5' : '#e3f2fd';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              {word}
+            </span>
+          );
+        }
+        return <span key={`${textIndex}-${index}`}>{word}</span>;
+      });
+      
+      return (
+        <React.Fragment key={textIndex}>
+          {paragraphContent}
+          {textIndex < texts.length - 1 && <br />}
+        </React.Fragment>
+      );
     });
   };
 

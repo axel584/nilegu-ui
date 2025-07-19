@@ -62,7 +62,7 @@ export const tekstojService = {
           ŝlosilvortoj: data.ŝlosilvortoj || (data.etikedoj ? (data.etikedoj as string).split(',').map((tag: string) => tag.trim()) : []),
           audioUrl: data.sono || data.audioUrl || null, // Utiliser le champ "sono" de l'API
           sono: data.sono || null, // Garder aussi le champ original
-          enhavo: Array.isArray(data.enhavo) ? data.enhavo.map((section: any) => section.teksto).join('\n\n') : (data.enhavo || data.contenu || ''),
+          enhavo: Array.isArray(data.enhavo) ? data.enhavo.map((section: any) => section.teksto) : (data.enhavo || data.contenu || ''),
           traduko: data.traduko || undefined,
           notoj: data.notoj || undefined,
           vortaro: Array.isArray(data.enhavo) ? data.enhavo.reduce((acc: any, section: any) => ({ ...acc, ...section.vortaro }), {}) : (data.vortaro || undefined)
