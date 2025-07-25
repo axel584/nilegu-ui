@@ -32,6 +32,7 @@ export interface Filtroj {
   longecoMin: number;
   longecoMax: number;
   ŝlosilvortoj: string[];
+  hasSono: boolean;
 }
 
 // Types pour l'API

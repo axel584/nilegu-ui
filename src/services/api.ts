@@ -127,6 +127,10 @@ export const tekstojService = {
         apiParams.etikedoj = filtroj.ŝlosilvortoj.join(',');
       }
       
+      if (filtroj.hasSono) {
+        apiParams.has_sono = 'true';
+      }
+      
       console.log('API params:', apiParams);
       
       // Toujours utiliser les paramètres avec offset pour la pagination

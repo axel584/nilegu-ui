@@ -180,7 +180,8 @@ export const useTekstojSearch = () => {
         aŭtoro: '',
         longecoMin: 0,
         longecoMax: 1000,
-        ŝlosilvortoj: []
+        ŝlosilvortoj: [],
+        hasSono: false
       }, 0);
     }
   }, [searchTekstoj, isInitialized]);

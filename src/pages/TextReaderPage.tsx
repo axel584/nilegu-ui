@@ -357,8 +357,10 @@ const TextReaderPage: React.FC = () => {
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Cliquez sur les mots soulignés pour voir leur traduction. 
-            Écoutez l'audio en même temps que vous lisez pour améliorer votre prononciation.
+            Cliquez sur les mots pour voir leur traduction.
+            {teksto.sono && teksto.sono.trim() !== '' && (
+              <> Écoutez l'audio en même temps que vous lisez pour améliorer votre prononciation.</>
+            )}
           </Typography>
         </Paper>
 
