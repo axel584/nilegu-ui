@@ -114,11 +114,8 @@ export const tekstojService = {
         }
       }
       
-      if (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') {
-        apiParams.auxtoro = filtroj.aŭtoro; // L'API utilise 'auxtoro'
-      }
       
-      if (filtroj.longecoMin > 0 || filtroj.longecoMax < 1000) {
+      if (filtroj.longecoMin > 200 || filtroj.longecoMax < 4000) {
         apiParams.vortoj_min = filtroj.longecoMin;
         apiParams.vortoj_max = filtroj.longecoMax;
       }
@@ -129,6 +126,12 @@ export const tekstojService = {
       
       if (filtroj.hasSono) {
         apiParams.has_sono = 'true';
+      }
+      
+      // Gestion de l'ordre de tri
+      if (filtroj.order && filtroj.sort) {
+        apiParams.sort = filtroj.order;  // Le champ à trier
+        apiParams.order = filtroj.sort;  // ASC ou DESC
       }
       
       console.log('API params:', apiParams);

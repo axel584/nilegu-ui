@@ -18,21 +18,20 @@ import {
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterIcon
+  FilterList as FilterIcon,
+  Sort as SortIcon
 } from '@mui/icons-material';
 import { Filtroj } from '../types';
 
 interface SearchFormProps {
   filtroj: Filtroj;
   onFiltroj: (filtroj: Filtroj) => void;
-  aŭtoroj: string[];
   onClearFiltroj: () => void;
 }
 
 const SearchForm: React.FC<SearchFormProps> = ({
   filtroj,
   onFiltroj,
-  aŭtoroj,
   onClearFiltroj
 }) => {
   const handleSerĉoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,8 +42,9 @@ const SearchForm: React.FC<SearchFormProps> = ({
     onFiltroj({ ...filtroj, nivelo: event.target.value });
   };
 
-  const handleAŭtoroChange = (event: any) => {
-    onFiltroj({ ...filtroj, aŭtoro: event.target.value });
+  const handleOrderChange = (event: any) => {
+    const [order, sort] = event.target.value.split('|');
+    onFiltroj({ ...filtroj, order, sort });
   };
 
   const handleLongecoChange = (event: Event, newValue: number | number[]) => {
@@ -105,21 +105,21 @@ const SearchForm: React.FC<SearchFormProps> = ({
           </FormControl>
         </Box>
 
-        {/* Auteur */}
+        {/* Ordre de tri */}
         <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
           <FormControl fullWidth>
-            <InputLabel>Auteur</InputLabel>
+            <InputLabel>Trier par</InputLabel>
             <Select
-              value={filtroj.aŭtoro}
-              label="Auteur"
-              onChange={handleAŭtoroChange}
+              value={`${filtroj.order}|${filtroj.sort}`}
+              label="Trier par"
+              onChange={handleOrderChange}
             >
-              <MenuItem value="">Tous les auteurs</MenuItem>
-              {aŭtoroj.map(aŭtoro => (
-                <MenuItem key={aŭtoro} value={aŭtoro}>
-                  {aŭtoro}
-                </MenuItem>
-              ))}
+              <MenuItem value="ekdato|DESC">Les plus récents</MenuItem>
+              <MenuItem value="nivelo|ASC">Les plus faciles</MenuItem>
+              <MenuItem value="nivelo|DESC">Les plus difficiles</MenuItem>
+              <MenuItem value="vortoj|ASC">Les plus courts</MenuItem>
+              <MenuItem value="vortoj|DESC">Les plus longs</MenuItem>
+              <MenuItem value="titolo|ASC">Ordre alphabétique</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -132,9 +132,9 @@ const SearchForm: React.FC<SearchFormProps> = ({
           value={[filtroj.longecoMin, filtroj.longecoMax]}
           onChange={handleLongecoChange}
           valueLabelDisplay="auto"
-          min={0}
-          max={1000}
-          step={10}
+          min={200}
+          max={4000}
+          step={50}
         />
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography variant="body2">{filtroj.longecoMin} mots</Typography>

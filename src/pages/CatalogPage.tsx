@@ -25,11 +25,12 @@ const CatalogPage: React.FC = () => {
   const [filtroj, setFiltroj] = useState<Filtroj>({
     serĉo: '',
     nivelo: '',
-    aŭtoro: '',
-    longecoMin: 0,
-    longecoMax: 1000,
+    longecoMin: 200,
+    longecoMax: 4000,
     ŝlosilvortoj: [],
-    hasSono: false
+    hasSono: false,
+    order: 'ekdato',
+    sort: 'DESC'
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,8 +43,7 @@ const CatalogPage: React.FC = () => {
     // Vérifier si des filtres sont appliqués (en excluant les valeurs vides)
     const hasFilters = (filtroj.serĉo && filtroj.serĉo.trim() !== '') || 
                       (filtroj.nivelo && filtroj.nivelo.trim() !== '') || 
-                      (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') || 
-                      filtroj.longecoMin > 0 || filtroj.longecoMax < 1000 || 
+                      filtroj.longecoMin > 200 || filtroj.longecoMax < 4000 || 
                       (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0) ||
                       filtroj.hasSono;
 
@@ -56,11 +56,12 @@ const CatalogPage: React.FC = () => {
         searchTekstoj({
           serĉo: '',
           nivelo: '',
-          aŭtoro: '',
-          longecoMin: 0,
-          longecoMax: 1000,
+          longecoMin: 200,
+          longecoMax: 4000,
           ŝlosilvortoj: [],
-          hasSono: false
+          hasSono: false,
+          order: filtroj.order,
+          sort: filtroj.sort
         }, 0);
       }
     }, 300);
@@ -72,8 +73,7 @@ const CatalogPage: React.FC = () => {
     // Vérifier si des filtres sont appliqués (en excluant les valeurs vides)
     const hasFilters = (filtroj.serĉo && filtroj.serĉo.trim() !== '') || 
                       (filtroj.nivelo && filtroj.nivelo.trim() !== '') || 
-                      (filtroj.aŭtoro && filtroj.aŭtoro.trim() !== '') || 
-                      filtroj.longecoMin > 0 || filtroj.longecoMax < 1000 || 
+                      filtroj.longecoMin > 200 || filtroj.longecoMax < 4000 || 
                       (filtroj.ŝlosilvortoj && filtroj.ŝlosilvortoj.length > 0) ||
                       filtroj.hasSono;
 
@@ -86,11 +86,12 @@ const CatalogPage: React.FC = () => {
       searchTekstoj({
         serĉo: '',
         nivelo: '',
-        aŭtoro: '',
-        longecoMin: 0,
-        longecoMax: 1000,
+        longecoMin: 200,
+        longecoMax: 4000,
         ŝlosilvortoj: [],
-        hasSono: false
+        hasSono: false,
+        order: filtroj.order,
+        sort: filtroj.sort
       }, offset);
     }
   }, [currentPage, filtroj, searchTekstoj, pagination.limit]);
@@ -100,11 +101,12 @@ const CatalogPage: React.FC = () => {
     const defaultFiltroj = {
       serĉo: '',
       nivelo: '',
-      aŭtoro: '',
-      longecoMin: 0,
-      longecoMax: 1000,
+      longecoMin: 200,
+      longecoMax: 4000,
       ŝlosilvortoj: [],
-      hasSono: false
+      hasSono: false,
+      order: 'ekdato',
+      sort: 'DESC'
     };
     setFiltroj(defaultFiltroj);
     setCurrentPage(1);
@@ -120,8 +122,6 @@ const CatalogPage: React.FC = () => {
     navigate(`/teksto/${tekstoId}`);
   };
 
-  // Obtenir les listes uniques pour les filtres (pour les options des selects)
-  const aŭtoroj = Array.from(new Set(tekstoj.map(t => t.aŭtoro))).sort();
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
@@ -151,7 +151,6 @@ const CatalogPage: React.FC = () => {
         <SearchForm
           filtroj={filtroj}
           onFiltroj={setFiltroj}
-          aŭtoroj={aŭtoroj}
           onClearFiltroj={clearFiltroj}
         />
 

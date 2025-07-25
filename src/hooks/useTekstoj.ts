@@ -177,11 +177,12 @@ export const useTekstojSearch = () => {
       searchTekstoj({
         serĉo: '',
         nivelo: '',
-        aŭtoro: '',
-        longecoMin: 0,
-        longecoMax: 1000,
+        longecoMin: 200,
+        longecoMax: 4000,
         ŝlosilvortoj: [],
-        hasSono: false
+        hasSono: false,
+        order: 'ekdato',
+        sort: 'DESC'
       }, 0);
     }
   }, [searchTekstoj, isInitialized]);

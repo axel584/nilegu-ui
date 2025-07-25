@@ -28,11 +28,12 @@ export interface Vorto {
 export interface Filtroj {
   serĉo: string;
   nivelo: string;
-  aŭtoro: string;
   longecoMin: number;
   longecoMax: number;
   ŝlosilvortoj: string[];
   hasSono: boolean;
+  order: string; // Le champ à trier (ekdato, nivelo, vortoj, titolo)
+  sort: string;  // Direction du tri (ASC, DESC)
 }
 
 // Types pour l'API
