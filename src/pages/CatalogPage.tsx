@@ -17,10 +17,13 @@ import { useTekstojSearch } from '../hooks/useTekstoj';
 import { Filtroj } from '../types';
 import SearchForm from '../components/SearchForm';
 import SearchResults from '../components/SearchResults';
+import { useAuth } from '../contexts/AuthContext';
+import { UserMenu } from '../components/UserMenu';
 
 const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
   const { tekstoj, loading, error, pagination, searchTekstoj } = useTekstojSearch();
+  const { user, isAuthenticated } = useAuth();
   
   const [filtroj, setFiltroj] = useState<Filtroj>({
     serĉo: '',
@@ -135,6 +138,9 @@ const CatalogPage: React.FC = () => {
           <Button color="inherit" onClick={() => navigate('/')}>
             Accueil
           </Button>
+          {isAuthenticated && user && (
+            <UserMenu user={user} />
+          )}
         </Toolbar>
       </AppBar>
 

@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { Texto, TextoDetaloj, APITeksto, APIResponse } from '../types';
+import { Texto, TextoDetaloj, APITeksto, APIResponse, User, AuthResponse } from '../types';
 
-const API_BASE_URL = 'https://ikurso.esperanto-france.org/api.php';
-//const API_BASE_URL = 'http://localhost:8080/api.php';
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:8080/api.php'
+  : 'https://ikurso.esperanto-france.org/api.php';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -19,15 +20,17 @@ export const tekstojService = {
       // L'API retourne un objet avec une propriété 'data' contenant le tableau
       if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
         // Transformer les données pour correspondre à notre interface Texto
-        const tekstoj = response.data.data.map((item: APITeksto) => ({
+        const tekstoj = response.data.data.map((item: any) => ({
           id: item.id,
           titolo: item.titolo,
-          aŭtoro: item.auxtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
+          aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
           nivelo: item.nivelo,
           longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
           priskribo: item.fonto, // Utiliser la source comme description
           ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
-          audioUrl: null // L'API ne semble pas fournir d'URL audio dans cette liste
+          audioUrl: item.sono || null,
+          sono: item.sono || null,
+          leganto: item.leganto || null // Inclure le nom de la personne qui lit
         }));
         
         console.log('Transformed data:', tekstoj);
@@ -65,7 +68,8 @@ export const tekstojService = {
           enhavo: Array.isArray(data.enhavo) ? data.enhavo.map((section: any) => section.teksto) : (data.enhavo || data.contenu || ''),
           traduko: data.traduko || undefined,
           notoj: data.notoj || undefined,
-          vortaro: Array.isArray(data.enhavo) ? data.enhavo.reduce((acc: any, section: any) => ({ ...acc, ...section.vortaro }), {}) : (data.vortaro || undefined)
+          vortaro: Array.isArray(data.enhavo) ? data.enhavo.reduce((acc: any, section: any) => ({ ...acc, ...section.vortaro }), {}) : (data.vortaro || undefined),
+          leganto: data.leganto || null
         };
         
         console.log('Transformed teksto detaloj:', tekstoDetaloj);
@@ -144,15 +148,17 @@ export const tekstojService = {
       // L'API retourne un objet avec une propriété 'data' contenant le tableau
       if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
         // Transformer les données APITeksto vers Texto
-        const tekstoj = response.data.data.map((item: APITeksto) => ({
+        const tekstoj = response.data.data.map((item: any) => ({
           id: item.id,
           titolo: item.titolo,
-          aŭtoro: item.auxtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
+          aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
           nivelo: item.nivelo,
           longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
           priskribo: item.fonto, // Utiliser la source comme description
           ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
-          audioUrl: null // L'API ne semble pas fournir d'URL audio dans cette liste
+          audioUrl: item.sono || null,
+          sono: item.sono || null,
+          leganto: item.leganto || null // Inclure le nom de la personne qui lit
         }));
         
         console.log('Transformed search data:', tekstoj);
@@ -182,6 +188,25 @@ export const tekstojService = {
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       throw new Error('Impossible de rechercher les textes');
+    }
+  }
+};
+
+export const authService = {
+  // Vérifier l'authentification de l'utilisateur actuel
+  getMe: async (): Promise<User | null> => {
+    try {
+      const response = await api.get('?path=auth/me');
+      console.log('Auth me response:', response.data);
+      
+      if (response.data && response.data.user) {
+        return response.data.user;
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('User not authenticated:', error);
+      return null;
     }
   }
 };

@@ -18,7 +18,12 @@ import {
   CircularProgress,
   Alert,
   Card,
-  CardContent
+  CardContent,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Slider
 } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
@@ -26,22 +31,38 @@ import {
   Stop as StopIcon,
   VolumeUp as VolumeIcon,
   ArrowBack as ArrowBackIcon,
-  Translate as TranslateIcon
+  Translate as TranslateIcon,
+  Replay5 as Replay5Icon,
+  VolumeDown as VolumeDownIcon,
+  VolumeOff as VolumeOffIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTekstoDetaloj } from '../hooks/useTekstoj';
 import { Vorto } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { UserMenu } from '../components/UserMenu';
 
 const TextReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { teksto, loading, error } = useTekstoDetaloj(id || null);
+  const { user, isAuthenticated } = useAuth();
+  
+  // Debug: vérifier la valeur de leganto
+  React.useEffect(() => {
+    if (teksto) {
+      console.log('teksto.leganto:', teksto.leganto);
+      console.log('teksto complet:', teksto);
+    }
+  }, [teksto]);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [selectedWord, setSelectedWord] = useState<Vorto | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [volume, setVolume] = useState(1);
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -84,12 +105,37 @@ const TextReaderPage: React.FC = () => {
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
+      audioRef.current.playbackRate = playbackRate;
+      audioRef.current.volume = volume;
     }
   };
 
   const handleEnded = () => {
     setIsPlaying(false);
     setCurrentTime(0);
+  };
+
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+    }
+  };
+
+  const handleRewind5Seconds = () => {
+    if (audioRef.current) {
+      const newTime = Math.max(0, audioRef.current.currentTime - 5);
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const handleVolumeChange = (_event: Event, newValue: number | number[]) => {
+    const volumeValue = Array.isArray(newValue) ? newValue[0] : newValue;
+    setVolume(volumeValue);
+    if (audioRef.current) {
+      audioRef.current.volume = volumeValue;
+    }
   };
 
   const formatTime = (time: number) => {
@@ -252,6 +298,9 @@ const TextReaderPage: React.FC = () => {
               fontSize: '0.75rem',
             }}
           />
+          {isAuthenticated && user && (
+            <UserMenu user={user} />
+          )}
         </Toolbar>
       </AppBar>
 
@@ -308,10 +357,28 @@ const TextReaderPage: React.FC = () => {
 
         {/* Lecteur audio */}
         {teksto.sono && teksto.sono.trim() !== '' && (
-          <Paper sx={{ p: 3, mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <VolumeIcon sx={{ mr: 1 }} />
-              <Typography variant="h6">Écouter le texte</Typography>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              mb: 4,
+              position: 'sticky',
+              top: 0,
+              zIndex: 1000,
+              bgcolor: 'white',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              borderRadius: 2
+            }}
+          >
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <VolumeIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Écouter le texte</Typography>
+              </Box>
+              {teksto.leganto && (
+                <Typography variant="body2" color="text.secondary">
+                  lu par {teksto.leganto}
+                </Typography>
+              )}
             </Box>
             
             <audio
@@ -338,6 +405,56 @@ const TextReaderPage: React.FC = () => {
               <IconButton onClick={handleStop}>
                 <StopIcon />
               </IconButton>
+              
+              <IconButton 
+                onClick={handleRewind5Seconds}
+                title="Revenir 5 secondes en arrière"
+              >
+                <Replay5Icon />
+              </IconButton>
+              
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <Select
+                  value={playbackRate}
+                  onChange={(e) => handlePlaybackRateChange(e.target.value as number)}
+                  displayEmpty
+                  sx={{ 
+                    fontSize: '0.875rem',
+                    '& .MuiSelect-select': { py: 0.5 }
+                  }}
+                >
+                  <MenuItem value={0.5}>0.5x</MenuItem>
+                  <MenuItem value={0.75}>0.75x</MenuItem>
+                  <MenuItem value={1}>1x</MenuItem>
+                  <MenuItem value={1.25}>1.25x</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 120, ml: 2 }}>
+                {volume === 0 ? <VolumeOffIcon fontSize="small" /> : <VolumeDownIcon fontSize="small" />}
+                <Slider
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  sx={{ 
+                    mx: 1,
+                    width: 80,
+                    '& .MuiSlider-thumb': {
+                      width: 16,
+                      height: 16,
+                    },
+                    '& .MuiSlider-track': {
+                      height: 3,
+                    },
+                    '& .MuiSlider-rail': {
+                      height: 3,
+                    }
+                  }}
+                />
+                <VolumeIcon fontSize="small" />
+              </Box>
               
               <Box sx={{ flex: 1, ml: 2 }}>
                 <Typography variant="body2" color="text.secondary">

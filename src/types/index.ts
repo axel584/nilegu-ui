@@ -10,6 +10,7 @@ export interface Texto {
   ŝlosilvortoj: string[];
   audioUrl?: string | null;
   sono?: string | null; // URL du fichier audio MP3
+  leganto?: string | null; // Nom de la personne qui lit le texte
 }
 
 export interface TextoDetaloj extends Texto {
@@ -17,6 +18,7 @@ export interface TextoDetaloj extends Texto {
   traduko?: string;
   notoj?: string;
   vortaro?: { [key: string]: string };
+  leganto?: string | null;
 }
 
 export interface Vorto {
@@ -62,4 +64,15 @@ export interface Nivelo {
   kodo: string;
   nomo: string;
   priskribo: string;
+}
+
+export interface User {
+  id: string;
+  nomo: string;
+  retpoŝto: string;
+  rolo?: string;
+}
+
+export interface AuthResponse {
+  user: User;
 } 

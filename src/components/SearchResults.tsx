@@ -12,9 +12,11 @@ import {
 import {
   Person as PersonIcon,
   Timer as TimerIcon,
-  VolumeUp as VolumeIcon
+  VolumeUp as VolumeIcon,
+  RecordVoiceOver as RecordVoiceOverIcon
 } from '@mui/icons-material';
 import { Texto } from '../types';
+import { stringToRainbowColor, getContrastTextColor } from '../utils/colorUtils';
 
 interface SearchResultsProps {
   tekstoj: Texto[];
@@ -136,6 +138,15 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   </Typography>
                 </Box>
 
+                {teksto.leganto && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <RecordVoiceOverIcon sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      lu par {teksto.leganto}
+                    </Typography>
+                  </Box>
+                )}
+
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <TimerIcon sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
@@ -157,15 +168,24 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
                 {teksto.ŝlosilvortoj && teksto.ŝlosilvortoj.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {teksto.ŝlosilvortoj.slice(0, 3).map((vorto, index) => (
-                      <Chip
-                        key={index}
-                        label={vorto}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: '0.7rem' }}
-                      />
-                    ))}
+                    {teksto.ŝlosilvortoj.slice(0, 3).map((vorto, index) => {
+                      const backgroundColor = stringToRainbowColor(vorto);
+                      const textColor = getContrastTextColor(backgroundColor);
+                      return (
+                        <Chip
+                          key={index}
+                          label={vorto}
+                          size="small"
+                          variant="outlined"
+                          sx={{ 
+                            fontSize: '0.7rem',
+                            // backgroundColor: backgroundColor,
+                            // color: textColor,
+                            // border: 'none'
+                          }}
+                        />
+                      );
+                    })}
                     {teksto.ŝlosilvortoj.length > 3 && (
                       <Chip
                         label={`+${teksto.ŝlosilvortoj.length - 3}`}

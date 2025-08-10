@@ -1,10 +1,12 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
 import { TypographyVariantsOptions } from '@mui/material/styles';
+import ReactGA from 'react-ga4';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import TextReaderPage from './pages/TextReaderPage';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Étendre les variantes typographiques
 declare module '@mui/material/styles' {
@@ -82,17 +84,34 @@ const theme = createTheme({
   },
 });
 
+// Initialiser Google Analytics
+ReactGA.initialize(process.env.REACT_APP_GA_TRACKING_ID || '');
+
+// Composant pour tracker les changements de page
+function Analytics() {
+  const location = useLocation();
+
+  useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+  }, [location]);
+
+  return null;
+}
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/catalog" element={<CatalogPage />} />
-          <Route path="/teksto/:id" element={<TextReaderPage />} />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Analytics />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/catalog" element={<CatalogPage />} />
+            <Route path="/teksto/:id" element={<TextReaderPage />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
