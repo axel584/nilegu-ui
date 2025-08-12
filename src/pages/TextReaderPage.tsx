@@ -286,7 +286,7 @@ const TextReaderPage: React.FC = () => {
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" component="div" sx={{ mr: 1 }}>
             {teksto.titolo}
           </Typography>
           <Chip
@@ -298,9 +298,8 @@ const TextReaderPage: React.FC = () => {
               fontSize: '0.75rem',
             }}
           />
-          {isAuthenticated && user && (
-            <UserMenu user={user} />
-          )}
+          <Box sx={{ flexGrow: 1 }} />
+          <UserMenu user={isAuthenticated && user ? user : undefined} />
         </Toolbar>
       </AppBar>
 

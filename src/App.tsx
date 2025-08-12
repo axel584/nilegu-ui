@@ -6,6 +6,7 @@ import ReactGA from 'react-ga4';
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import TextReaderPage from './pages/TextReaderPage';
+import HistoriquePage from './pages/HistoriquePage';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Étendre les variantes typographiques
@@ -109,6 +110,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/catalog" element={<CatalogPage />} />
             <Route path="/teksto/:id" element={<TextReaderPage />} />
+            <Route path="/historique" element={<HistoriquePage />} />
           </Routes>
         </Router>
       </AuthProvider>

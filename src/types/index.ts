@@ -69,6 +69,7 @@ export interface Nivelo {
 export interface User {
   id: string;
   nomo: string;
+  personnomo: string;
   retpoŝto: string;
   rolo?: string;
 }

@@ -200,13 +200,55 @@ export const authService = {
       console.log('Auth me response:', response.data);
       
       if (response.data && response.data.user) {
-        return response.data.user;
+        const userData = response.data.user;
+        return {
+          id: userData.id,
+          nomo: userData.nomo,
+          personnomo: userData.personnomo,
+          retpoŝto: userData.retpoŝto,
+          rolo: userData.rolo
+        };
       }
       
       return null;
     } catch (error) {
       console.log('User not authenticated:', error);
       return null;
+    }
+  },
+
+  // Connecter un utilisateur
+  login: async (identigilo: string, pasvorto: string): Promise<User> => {
+    try {
+      const response = await api.post('?path=auth/login', {
+        identigilo,
+        pasvorto
+      });
+      
+      console.log('Login response:', response.data);
+      
+      if (response.data && response.data.user) {
+        const userData = response.data.user;
+        return {
+          id: userData.id,
+          nomo: userData.nomo,
+          personnomo: userData.personnomo,
+          retpoŝto: userData.retpoŝto,
+          rolo: userData.rolo
+        };
+      }
+      
+      throw new Error('Réponse de connexion invalide');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.status === 401) {
+        throw new Error('Identifiant ou mot de passe incorrect');
+      } else {
+        throw new Error('Erreur lors de la connexion');
+      }
     }
   }
 };

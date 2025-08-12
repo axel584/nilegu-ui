@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       const currentUser = await authService.getMe();
       setUser(currentUser);
-      console.log('AuthContext - User loaded:', currentUser ? `${currentUser.nomo} (${currentUser.retpoŝto})` : 'No user authenticated');
+      console.log('AuthContext - User loaded:', currentUser ? `${currentUser.personnomo || currentUser.nomo} (${currentUser.retpoŝto})` : 'No user authenticated');
     } catch (err) {
       setError('Erreur lors de la vérification de l\'authentification');
       setUser(null);
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = (user: User) => {
     setUser(user);
     setError(null);
-    console.log('AuthContext - User logged in:', user.nomo);
+    console.log('AuthContext - User logged in:', user.personnomo || user.nomo);
   };
 
   const logout = () => {

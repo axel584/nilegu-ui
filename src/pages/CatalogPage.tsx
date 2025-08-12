@@ -131,16 +131,20 @@ const CatalogPage: React.FC = () => {
       {/* AppBar */}
       <AppBar position="static" sx={{ bgcolor: '#554E47', borderRadius: 0 }}>
         <Toolbar>
-          <BookIcon sx={{ mr: 2 }} />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Catalogue de textes
+          <Typography 
+            variant="appTitle" 
+            component="div" 
+            sx={{ 
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '2rem',
+              flexGrow: 1
+            }}
+            onClick={() => navigate('/')}
+          >
+            Ni legu
           </Typography>
-          <Button color="inherit" onClick={() => navigate('/')}>
-            Accueil
-          </Button>
-          {isAuthenticated && user && (
-            <UserMenu user={user} />
-          )}
+          <UserMenu user={isAuthenticated && user ? user : undefined} />
         </Toolbar>
       </AppBar>
 
