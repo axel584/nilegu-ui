@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Texto, TextoDetaloj, Filtroj, APIResponse, APITeksto } from '../types';
 import { tekstojService } from '../services/api';
+import { PAGINATION_CONFIG, DEFAULT_FILTERS } from '../config/constants';
 
 export const useTekstoj = () => {
   const [tekstoj, setTekstoj] = useState<Texto[]>([]);
@@ -65,13 +66,13 @@ export const useTekstoDetaloj = (id: string | null) => {
   return { teksto, loading, error, refetch: () => id && fetchTeksto(id) };
 };
 
-export const useTekstojSearch = () => {
+export const useTekstojSearch = (options?: { skipInitialLoad?: boolean }) => {
   const [tekstoj, setTekstoj] = useState<Texto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     total: 0,
-    limit: 20,
+    limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
     offset: 0,
     count: 0
   });
@@ -105,7 +106,7 @@ export const useTekstojSearch = () => {
         setTekstoj([]);
         setPagination({
           total: 0,
-          limit: 20,
+          limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
           offset: 0,
           count: 0
         });
@@ -115,7 +116,7 @@ export const useTekstojSearch = () => {
       setTekstoj([]);
       setPagination({
         total: 0,
-        limit: 20,
+        limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
         offset: 0,
         count: 0
       });
@@ -151,7 +152,7 @@ export const useTekstojSearch = () => {
         setTekstoj([]);
         setPagination({
           total: 0,
-          limit: 20,
+          limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
           offset: 0,
           count: 0
         });
@@ -161,7 +162,7 @@ export const useTekstojSearch = () => {
       setTekstoj([]);
       setPagination({
         total: 0,
-        limit: 20,
+        limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
         offset: 0,
         count: 0
       });
@@ -172,20 +173,26 @@ export const useTekstojSearch = () => {
 
   // Charger tous les textes au démarrage seulement si pas encore initialisé
   useEffect(() => {
-    if (!isInitialized) {
+    if (!isInitialized && !options?.skipInitialLoad) {
+      console.log('🚀 useTekstojSearch useEffect: chargement initial automatique');
       // Utiliser la recherche sans filtres avec pagination au lieu de fetchAllTekstoj
       searchTekstoj({
         serĉo: '',
         nivelo: '',
-        longecoMin: 200,
-        longecoMax: 4000,
+        longecoMin: DEFAULT_FILTERS.LONGECO_MIN,
+        longecoMax: DEFAULT_FILTERS.LONGECO_MAX,
         ŝlosilvortoj: [],
         hasSono: false,
-        order: 'ekdato',
-        sort: 'DESC'
+        order: DEFAULT_FILTERS.ORDER,
+        sort: DEFAULT_FILTERS.SORT
       }, 0);
+    } else if (options?.skipInitialLoad) {
+      console.log('⏭️ useTekstojSearch useEffect: chargement initial ignoré');
+      // Si on skip le chargement initial, marquer comme initialisé
+      setIsInitialized(true);
+      setLoading(false);
     }
-  }, [searchTekstoj, isInitialized]);
+  }, [searchTekstoj, isInitialized, options?.skipInitialLoad]);
 
   return { 
     tekstoj, 

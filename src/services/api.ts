@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Texto, TextoDetaloj, APITeksto, APIResponse, User, AuthResponse } from '../types';
+import { PAGINATION_CONFIG } from '../config/constants';
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:8080/api.php'
@@ -88,7 +89,8 @@ export const tekstojService = {
     try {
       // Transformer les filtres pour correspondre aux noms attendus par l'API
       const apiParams: any = {
-        offset: offset
+        offset: offset,
+        limit: PAGINATION_CONFIG.ITEMS_PER_PAGE
       };
       
       if (filtroj.serĉo && filtroj.serĉo.trim() !== '') {
@@ -168,7 +170,7 @@ export const tekstojService = {
           data: tekstoj,
           pagination: response.data.pagination || {
             total: tekstoj.length,
-            limit: 20,
+            limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
             offset: offset,
             count: tekstoj.length
           }
@@ -180,7 +182,7 @@ export const tekstojService = {
         data: [],
         pagination: {
           total: 0,
-          limit: 20,
+          limit: PAGINATION_CONFIG.ITEMS_PER_PAGE,
           offset: offset,
           count: 0
         }
@@ -188,6 +190,74 @@ export const tekstojService = {
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       throw new Error('Impossible de rechercher les textes');
+    }
+  }
+};
+
+export const legotajxojService = {
+  // Sauvegarder un texte pour plus tard
+  saveTeksto: async (tekstoId: string): Promise<void> => {
+    try {
+      const response = await api.post('?path=legotajxoj', {
+        teksto_id: tekstoId
+      });
+      
+      console.log('Save teksto response:', response.data);
+    } catch (error: any) {
+      console.error('Save teksto error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erreur lors de la sauvegarde du texte');
+      }
+    }
+  },
+
+  // Récupérer les textes sauvegardés de l'utilisateur
+  getSavedTekstoj: async (): Promise<Texto[]> => {
+    try {
+      const response = await api.get('?path=legotajxoj');
+      console.log('Get saved tekstoj response:', response.data);
+      
+      if (response.data && Array.isArray(response.data.data)) {
+        // Transformer les données APITeksto vers Texto
+        const tekstoj = response.data.data.map((item: any) => ({
+          id: item.id,
+          titolo: item.titolo,
+          aŭtoro: item.auxtoro || item.aŭtoro,
+          nivelo: item.nivelo,
+          longeco: parseInt(item.vortoj) || 0,
+          priskribo: item.fonto,
+          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
+          audioUrl: item.sono || null,
+          sono: item.sono || null,
+          leganto: item.leganto || null
+        }));
+        
+        return tekstoj;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('Get saved tekstoj error:', error);
+      throw new Error('Erreur lors du chargement de la liste à lire');
+    }
+  },
+
+  // Supprimer un texte de la liste sauvegardée
+  removeTeksto: async (tekstoId: string): Promise<void> => {
+    try {
+      const response = await api.delete(`?path=legotajxoj&teksto_id=${tekstoId}`);
+      console.log('Remove teksto response:', response.data);
+    } catch (error: any) {
+      console.error('Remove teksto error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erreur lors de la suppression du texte');
+      }
     }
   }
 };

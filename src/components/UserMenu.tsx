@@ -16,7 +16,7 @@ import {
   Button,
   Alert
 } from '@mui/material';
-import { AccountCircle, ExitToApp, Login, History } from '@mui/icons-material';
+import { AccountCircle, ExitToApp, Login, History, BookmarkBorder } from '@mui/icons-material';
 import { User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/api';
@@ -50,6 +50,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
 
   const handleHistorique = () => {
     navigate('/historique');
+    handleMenuClose();
+  };
+
+  const handleListeALire = () => {
+    navigate('/liste-a-lire');
     handleMenuClose();
   };
 
@@ -128,6 +133,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               )}
             </Box>
             <Divider />
+            <MenuItem onClick={handleListeALire}>
+              <BookmarkBorder sx={{ mr: 1 }} />
+              Ma liste à lire
+            </MenuItem>
             <MenuItem onClick={handleHistorique}>
               <History sx={{ mr: 1 }} />
               Historique

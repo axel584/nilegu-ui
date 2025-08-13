@@ -7,13 +7,16 @@ import {
   Chip,
   Pagination,
   CircularProgress,
-  Alert
+  Alert,
+  IconButton
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Timer as TimerIcon,
   VolumeUp as VolumeIcon,
-  RecordVoiceOver as RecordVoiceOverIcon
+  RecordVoiceOver as RecordVoiceOverIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon
 } from '@mui/icons-material';
 import { Texto } from '../types';
 import { stringToRainbowColor, getContrastTextColor } from '../utils/colorUtils';
@@ -31,6 +34,8 @@ interface SearchResultsProps {
   currentPage: number;
   onPageChange: (event: React.ChangeEvent<unknown>, page: number) => void;
   onTekstoClick: (tekstoId: string) => void;
+  onSaveTeksto: (tekstoId: string) => void;
+  savedTekstoj: Set<string>;
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({
@@ -40,7 +45,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   pagination,
   currentPage,
   onPageChange,
-  onTekstoClick
+  onTekstoClick,
+  onSaveTeksto,
+  savedTekstoj
 }) => {
   const getNiveloColor = (nivelo: string) => {
     const niveloNum = parseInt(nivelo);
@@ -120,15 +127,36 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   <Typography variant="h6" component="h2" sx={{ flex: 1, mr: 1 }}>
                     {teksto.titolo}
                   </Typography>
-                  <Chip
-                    label={getNiveloLabel(teksto.nivelo)}
-                    size="small"
-                    sx={{
-                      bgcolor: getNiveloColor(teksto.nivelo),
-                      color: 'white',
-                      fontSize: '0.75rem',
-                    }}
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSaveTeksto(teksto.id);
+                      }}
+                      size="small"
+                      sx={{
+                        color: savedTekstoj.has(teksto.id) ? 'primary.main' : 'grey.500',
+                        '&:hover': {
+                          color: 'primary.main',
+                        }
+                      }}
+                    >
+                      {savedTekstoj.has(teksto.id) ? (
+                        <StarIcon fontSize="small" />
+                      ) : (
+                        <StarBorderIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                    <Chip
+                      label={getNiveloLabel(teksto.nivelo)}
+                      size="small"
+                      sx={{
+                        bgcolor: getNiveloColor(teksto.nivelo),
+                        color: 'white',
+                        fontSize: '0.75rem',
+                      }}
+                    />
+                  </Box>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
