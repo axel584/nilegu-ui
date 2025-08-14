@@ -2,7 +2,7 @@
 
 export const PAGINATION_CONFIG = {
   // Nombre d'éléments par page dans le catalogue
-  ITEMS_PER_PAGE: 9 as number,
+  ITEMS_PER_PAGE: 12 as number,
   
   // Autres configurations de pagination si nécessaire
   MAX_VISIBLE_PAGES: 10,

@@ -19,7 +19,6 @@ import {
 import { AccountCircle, ExitToApp, Login, History, BookmarkBorder } from '@mui/icons-material';
 import { User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/api';
 
 interface UserMenuProps {
   user?: User;
@@ -32,7 +31,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { logout, login: setUser } = useAuth();
+  const { logout, login } = useAuth();
   const navigate = useNavigate();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -43,9 +42,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    handleMenuClose();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      handleMenuClose();
+    }
   };
 
   const handleHistorique = () => {
@@ -77,8 +81,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
     setLoginError('');
     
     try {
-      const user = await authService.login(identifiant, password);
-      setUser(user);
+      await login(identifiant, password);
       handleCloseLoginDialog();
     } catch (error: any) {
       setLoginError(error.message || 'Erreur lors de la connexion');
@@ -126,11 +129,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               <Typography variant="body2" color="text.secondary">
                 {user.retpoŝto}
               </Typography>
-              {user.rolo && (
-                <Typography variant="caption" color="primary">
-                  {user.rolo}
-                </Typography>
-              )}
             </Box>
             <Divider />
             <MenuItem onClick={handleListeALire}>
@@ -161,7 +159,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Connexion</DialogTitle>
+        <DialogTitle>Connectez vous avec votre compte Ikurso</DialogTitle>
         <DialogContent>
           {loginError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -192,6 +190,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               }
             }}
           />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Si vous n'avez pas de compte ou que vous avez oublié votre mot de passe, rendez-vous sur{' '}
+            <a href="https://ikurso.esperanto-france.org" target="_blank" rel="noopener noreferrer">
+              https://ikurso.esperanto-france.org
+            </a>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseLoginDialog}>

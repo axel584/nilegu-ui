@@ -16,7 +16,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from '../components/UserMenu';
 import { Texto } from '../types';
 import { legotajxojService } from '../services/api';
-import SearchResults from '../components/SearchResults';
+import TextCard from '../components/TextCard';
+import Footer from '../components/Footer';
 
 const ListeALirePage: React.FC = () => {
   const navigate = useNavigate();
@@ -67,7 +68,6 @@ const ListeALirePage: React.FC = () => {
     return null; // Redirection en cours
   }
 
-  const savedTekstojIds = new Set(tekstoj.map(t => t.id));
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
@@ -126,25 +126,27 @@ const ListeALirePage: React.FC = () => {
               </Typography>
             </Box>
           ) : (
-            <SearchResults
-              tekstoj={tekstoj}
-              loading={false}
-              error={null}
-              pagination={{
-                total: tekstoj.length,
-                limit: tekstoj.length,
-                offset: 0,
-                count: tekstoj.length
-              }}
-              currentPage={1}
-              onPageChange={() => {}} // Pas de pagination pour la liste sauvegardée
-              onTekstoClick={handleTekstoClick}
-              onSaveTeksto={handleRemoveTeksto} // Retirer de la liste quand on clique sur l'étoile
-              savedTekstoj={savedTekstojIds}
-            />
+            <>
+              <Typography variant="h6" sx={{ mb: 3 }}>
+                {tekstoj.length} texte{tekstoj.length !== 1 ? 's' : ''} dans votre liste
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                {tekstoj.map((teksto) => (
+                  <Box sx={{ flex: '1 1 350px', minWidth: 0 }} key={teksto.id}>
+                    <TextCard
+                      teksto={teksto}
+                      onTekstoClick={handleTekstoClick}
+                      onSaveTeksto={handleRemoveTeksto}
+                      isSaved={true}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            </>
           )}
         </Paper>
       </Container>
+      <Footer />
     </Box>
   );
 };

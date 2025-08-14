@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Texto, TextoDetaloj, Filtroj, APIResponse, APITeksto } from '../types';
-import { tekstojService } from '../services/api';
+import { tekstojService, legitajxojService } from '../services/api';
 import { PAGINATION_CONFIG, DEFAULT_FILTERS } from '../config/constants';
 
 export const useTekstoj = () => {
@@ -202,4 +202,30 @@ export const useTekstojSearch = (options?: { skipInitialLoad?: boolean }) => {
     searchTekstoj, 
     refetch: fetchAllTekstoj 
   };
+};
+
+export const useReadTexts = () => {
+  const [tekstoj, setTekstoj] = useState<Texto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchReadTexts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await legitajxojService.getReadTexts();
+      setTekstoj(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      setTekstoj([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReadTexts();
+  }, []);
+
+  return { tekstoj, loading, error, refetch: fetchReadTexts };
 }; 

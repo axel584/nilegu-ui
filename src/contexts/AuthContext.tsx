@@ -7,8 +7,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  login: (user: User) => void;
-  logout: () => void;
+  login: (identigilo: string, pasvorto: string) => Promise<void>;
+  logout: () => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -22,7 +22,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     // Récupérer l'utilisateur depuis localStorage au démarrage
     const savedUser = localStorage.getItem('auth_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    const savedToken = localStorage.getItem('auth_token');
+    // Ne restaurer l'utilisateur que si on a à la fois les données utilisateur et le token
+    return (savedUser && savedToken) ? JSON.parse(savedUser) : null;
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,42 +33,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        setUser(null);
+        localStorage.removeItem('auth_user');
+        return;
+      }
+      
       const currentUser = await authService.getMe();
       setUser(currentUser);
       // Sauvegarder dans localStorage
-      localStorage.setItem('auth_user', JSON.stringify(currentUser));
+      if (currentUser) {
+        localStorage.setItem('auth_user', JSON.stringify(currentUser));
+      }
       console.log('AuthContext - User loaded:', currentUser ? `${currentUser.personnomo || currentUser.nomo} (${currentUser.retpoŝto})` : 'No user authenticated');
     } catch (err) {
       setError('Erreur lors de la vérification de l\'authentification');
       setUser(null);
       // Supprimer de localStorage en cas d'erreur
       localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_token');
       console.log('AuthContext - Authentication failed:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = (user: User) => {
-    setUser(user);
-    setError(null);
-    // Sauvegarder dans localStorage
-    localStorage.setItem('auth_user', JSON.stringify(user));
-    console.log('AuthContext - User logged in:', user.personnomo || user.nomo);
+  const login = async (identigilo: string, pasvorto: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { user, token } = await authService.login(identigilo, pasvorto);
+      setUser(user);
+      // Sauvegarder dans localStorage (le token est déjà sauvegardé dans authService.login)
+      localStorage.setItem('auth_user', JSON.stringify(user));
+      console.log('AuthContext - User logged in:', user.personnomo || user.nomo);
+    } catch (error: any) {
+      setError(error.message || 'Erreur lors de la connexion');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    setError(null);
-    // Supprimer de localStorage
-    localStorage.removeItem('auth_user');
-    console.log('AuthContext - User logged out');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.warn('Logout service failed, but continuing with local cleanup');
+    } finally {
+      setUser(null);
+      setError(null);
+      // Les tokens et données utilisateur sont déjà supprimés dans authService.logout
+      console.log('AuthContext - User logged out');
+    }
   };
 
   useEffect(() => {
-    // Si on a un utilisateur en localStorage, on peut éviter l'appel API initial
+    // Si on a un utilisateur et un token en localStorage, on peut éviter l'appel API initial
     const savedUser = localStorage.getItem('auth_user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('auth_token');
+    
+    if (savedUser && savedToken) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
@@ -75,6 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (err) {
         console.error('AuthContext - Error parsing saved user:', err);
         localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_token');
         checkAuth();
       }
     } else {

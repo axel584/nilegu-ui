@@ -9,6 +9,7 @@ import {
   Paper,
   Chip,
 } from '@mui/material';
+import Footer from '../components/Footer';
 import {
   PlayArrow as PlayIcon,
   Book as BookIcon,
@@ -237,6 +238,7 @@ const HomePage: React.FC = () => {
             </Button>
           </Container>
         </Box>
+        <Footer />
       </Box>
   );
 };

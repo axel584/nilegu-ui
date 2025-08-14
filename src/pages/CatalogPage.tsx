@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PAGINATION_CONFIG, API_CONFIG, DEFAULT_FILTERS } from '../config/constants';
+import Footer from '../components/Footer';
 import {
   Container,
   Typography,
@@ -220,6 +221,7 @@ const CatalogPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <Footer />
     </Box>
   );
 };

@@ -23,7 +23,9 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Slider
+  Slider,
+  TextField,
+  Rating
 } from '@mui/material';
 import {
   PlayArrow as PlayIcon,
@@ -41,6 +43,8 @@ import { useTekstoDetaloj } from '../hooks/useTekstoj';
 import { Vorto } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from '../components/UserMenu';
+import { legitajxojService } from '../services/api';
+import Footer from '../components/Footer';
 
 const TextReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +59,16 @@ const TextReaderPage: React.FC = () => {
       console.log('teksto complet:', teksto);
     }
   }, [teksto]);
+
+  // Enregistrer le début de lecture quand le texte est chargé
+  React.useEffect(() => {
+    if (teksto && id && isAuthenticated) {
+      legitajxojService.recordTextStart(id).catch(error => {
+        console.error('Erreur lors de l\'enregistrement du début de lecture:', error);
+        // Ne pas afficher d'erreur à l'utilisateur pour ne pas perturber l'expérience de lecture
+      });
+    }
+  }, [teksto, id, isAuthenticated]);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -63,6 +77,11 @@ const TextReaderPage: React.FC = () => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [volume, setVolume] = useState(1);
+  
+  // États pour le formulaire d'avis
+  const [rating, setRating] = useState<number | null>(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -135,6 +154,21 @@ const TextReaderPage: React.FC = () => {
     setVolume(volumeValue);
     if (audioRef.current) {
       audioRef.current.volume = volumeValue;
+    }
+  };
+
+  const handleFinishText = async () => {
+    if (!id || !isAuthenticated || !rating) return;
+    
+    setIsSubmitting(true);
+    try {
+      await legitajxojService.finishText(id, rating, comment);
+      console.log('Texte marqué comme terminé avec succès');
+      navigate('/catalog');
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -481,7 +515,7 @@ const TextReaderPage: React.FC = () => {
         </Paper>
 
         {/* Texte */}
-        <Paper sx={{ p: 4 }}>
+        <Paper sx={{ p: 4, mb: 4 }}>
           <Typography 
             variant="body1" 
             sx={{ 
@@ -493,6 +527,54 @@ const TextReaderPage: React.FC = () => {
             {renderText(teksto.enhavo, teksto.ŝlosilvortoj || [], teksto.vortaro)}
           </Typography>
         </Paper>
+
+        {/* Formulaire d'avis */}
+        {isAuthenticated && (
+          <Paper sx={{ p: 4 }}>
+            <Typography variant="h6" gutterBottom>
+              Mon avis sur ce texte :
+            </Typography>
+            
+            <Box sx={{ mb: 3 }}>
+              <Typography component="legend" sx={{ mb: 1 }}>
+                Note :
+              </Typography>
+              <Rating
+                name="text-rating"
+                value={rating}
+                onChange={(event, newValue) => {
+                  setRating(newValue);
+                }}
+                size="large"
+              />
+            </Box>
+            
+            <TextField
+              multiline
+              rows={3}
+              fullWidth
+              label="Votre commentaire (optionnel)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mb: 3 }}
+              placeholder="Partagez votre avis sur ce texte..."
+            />
+            
+            <Button
+              variant="contained"
+              onClick={handleFinishText}
+              disabled={isSubmitting || !rating}
+              sx={{
+                bgcolor: '#554E47',
+                '&:hover': { bgcolor: '#433B35' },
+                px: 4,
+                py: 1.5
+              }}
+            >
+              {isSubmitting ? 'Enregistrement...' : "J'ai fini ce texte"}
+            </Button>
+          </Paper>
+        )}
       </Container>
 
       {/* Dialog de traduction */}
@@ -526,6 +608,7 @@ const TextReaderPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      <Footer />
     </Box>
   );
 };

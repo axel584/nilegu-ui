@@ -1,15 +1,48 @@
 import axios from 'axios';
-import { Texto, TextoDetaloj, APITeksto, APIResponse, User, AuthResponse } from '../types';
+import { Texto, TextoDetaloj, APIResponse, User } from '../types';
 import { PAGINATION_CONFIG } from '../config/constants';
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:8080/api.php'
   : 'https://ikurso.esperanto-france.org/api.php';
 
+// Fonction pour récupérer le token JWT
+const getAuthToken = (): string | null => {
+  return localStorage.getItem('auth_token');
+};
+
+// Intercepteur pour ajouter le token JWT aux requêtes
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
 });
+
+// Ajouter l'intercepteur pour inclure le token JWT dans les headers
+api.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Intercepteur pour gérer les erreurs d'authentification
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expiré ou invalide, supprimer le token
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const tekstojService = {
   // Récupérer la liste des textes
@@ -220,16 +253,16 @@ export const legotajxojService = {
       const response = await api.get('?path=legotajxoj');
       console.log('Get saved tekstoj response:', response.data);
       
-      if (response.data && Array.isArray(response.data.data)) {
-        // Transformer les données APITeksto vers Texto
-        const tekstoj = response.data.data.map((item: any) => ({
-          id: item.id,
+      if (response.data && Array.isArray(response.data.legotajxoj)) {
+        // Transformer les données de legotajxoj vers Texto
+        const tekstoj = response.data.legotajxoj.map((item: any) => ({
+          id: item.teksto_id, // Utiliser teksto_id comme identifiant principal
           titolo: item.titolo,
-          aŭtoro: item.auxtoro || item.aŭtoro,
-          nivelo: item.nivelo,
+          aŭtoro: item.auxtoro,
+          nivelo: item.nivelo.toString(),
           longeco: parseInt(item.vortoj) || 0,
           priskribo: item.fonto,
-          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
+          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0) : [],
           audioUrl: item.sono || null,
           sono: item.sono || null,
           leganto: item.leganto || null
@@ -248,7 +281,7 @@ export const legotajxojService = {
   // Supprimer un texte de la liste sauvegardée
   removeTeksto: async (tekstoId: string): Promise<void> => {
     try {
-      const response = await api.delete(`?path=legotajxoj&teksto_id=${tekstoId}`);
+      const response = await api.delete(`?path=legotajxoj/${tekstoId}`);
       console.log('Remove teksto response:', response.data);
     } catch (error: any) {
       console.error('Remove teksto error:', error);
@@ -258,6 +291,80 @@ export const legotajxojService = {
       } else {
         throw new Error('Erreur lors de la suppression du texte');
       }
+    }
+  }
+};
+
+export const legitajxojService = {
+  // Enregistrer le début de lecture d'un texte
+  recordTextStart: async (tekstoId: string): Promise<void> => {
+    try {
+      const response = await api.post('?path=legitajxoj', {
+        teksto_id: tekstoId,
+        komenc_timestamp: new Date().toISOString()
+      });
+      
+      console.log('Record text start response:', response.data);
+    } catch (error: any) {
+      console.error('Record text start error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erreur lors de l\'enregistrement du début de lecture');
+      }
+    }
+  },
+
+  // Marquer un texte comme terminé avec note et commentaire
+  finishText: async (tekstoId: string, rating: number, comment: string): Promise<void> => {
+    try {
+      const response = await api.patch(`?path=legitajxoj/${tekstoId}`, {
+        fin_timestamp: new Date().toISOString(),
+        noto: rating,
+        komentaro: comment.trim()
+      });
+      
+      console.log('Finish text response:', response.data);
+    } catch (error: any) {
+      console.error('Finish text error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erreur lors de la finalisation du texte');
+      }
+    }
+  },
+
+  // Récupérer l'historique des textes lus par l'utilisateur
+  getReadTexts: async (): Promise<Texto[]> => {
+    try {
+      const response = await api.get('?path=legitajxoj');
+      console.log('Read texts response:', response.data);
+      
+      if (response.data && Array.isArray(response.data.legitajxoj)) {
+        // Transformer les données de legitajxoj vers Texto
+        const tekstoj = response.data.legitajxoj.map((item: any) => ({
+          id: item.teksto_id,
+          titolo: item.titolo,
+          aŭtoro: item.auxtoro,
+          nivelo: item.nivelo.toString(),
+          longeco: parseInt(item.vortoj) || 0,
+          priskribo: item.fonto,
+          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0) : [],
+          audioUrl: item.sono || null,
+          sono: item.sono || null,
+          leganto: item.leganto || null
+        }));
+        
+        return tekstoj;
+      }
+      
+      return [];
+    } catch (error: any) {
+      console.error('Get read texts error:', error);
+      throw new Error('Erreur lors du chargement de l\'historique des lectures');
     }
   }
 };
@@ -273,10 +380,10 @@ export const authService = {
         const userData = response.data.user;
         return {
           id: userData.id,
-          nomo: userData.nomo,
-          personnomo: userData.personnomo,
-          retpoŝto: userData.retpoŝto,
-          rolo: userData.rolo
+          nomo: userData.enirnomo || userData.nomo, // Support pour les deux formats
+          personnomo: userData.personnomo || userData.familinomo,
+          retpoŝto: userData.retadreso || userData.retpoŝto, // Support pour les deux formats
+          rolo: userData.rajtoj || userData.rolo // Support pour les deux formats
         };
       }
       
@@ -288,7 +395,7 @@ export const authService = {
   },
 
   // Connecter un utilisateur
-  login: async (identigilo: string, pasvorto: string): Promise<User> => {
+  login: async (identigilo: string, pasvorto: string): Promise<{ user: User; token: string }> => {
     try {
       const response = await api.post('?path=auth/login', {
         identigilo,
@@ -297,18 +404,27 @@ export const authService = {
       
       console.log('Login response:', response.data);
       
-      if (response.data && response.data.user) {
+      if (response.data && response.data.user && response.data.access_token) {
         const userData = response.data.user;
-        return {
+        const token = response.data.access_token;
+        
+        // Sauvegarder le token JWT
+        localStorage.setItem('auth_token', token);
+        
+        // Mapper les champs de l'API vers l'interface User
+        const user: User = {
           id: userData.id,
-          nomo: userData.nomo,
-          personnomo: userData.personnomo,
-          retpoŝto: userData.retpoŝto,
-          rolo: userData.rolo
+          nomo: userData.enirnomo, // enirnomo = nom d'utilisateur
+          personnomo: userData.personnomo || userData.familinomo, // utilisar le nom de famille si pas de prénom
+          retpoŝto: userData.retadreso, // retadreso = adresse email
+          rolo: userData.rajtoj // rajtoj = droits/rôle
         };
+        
+        console.log('Mapped user:', user);
+        return { user, token };
       }
       
-      throw new Error('Réponse de connexion invalide');
+      throw new Error('Réponse de connexion invalide - aucune donnée utilisateur trouvée');
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -319,6 +435,20 @@ export const authService = {
       } else {
         throw new Error('Erreur lors de la connexion');
       }
+    }
+  },
+
+  // Déconnecter un utilisateur
+  logout: async (): Promise<void> => {
+    try {
+      await api.post('?path=auth/logout');
+    } catch (error) {
+      // Même si la requête échoue, on supprime les données locales
+      console.warn('Logout request failed, but clearing local data anyway');
+    } finally {
+      // Supprimer le token et les données utilisateur
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
     }
   }
 };
