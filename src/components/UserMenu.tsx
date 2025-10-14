@@ -16,7 +16,7 @@ import {
   Button,
   Alert
 } from '@mui/material';
-import { AccountCircle, ExitToApp, Login, History, BookmarkBorder } from '@mui/icons-material';
+import { AccountCircle, ExitToApp, Login, History, BookmarkBorder, Person } from '@mui/icons-material';
 import { User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -59,6 +59,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
 
   const handleListeALire = () => {
     navigate('/liste-a-lire');
+    handleMenuClose();
+  };
+
+  const handleProfil = () => {
+    navigate('/profil');
     handleMenuClose();
   };
 
@@ -131,6 +136,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               </Typography>
             </Box>
             <Divider />
+            <MenuItem onClick={handleProfil}>
+              <Person sx={{ mr: 1 }} />
+              Mon profil
+            </MenuItem>
             <MenuItem onClick={handleListeALire}>
               <BookmarkBorder sx={{ mr: 1 }} />
               Ma liste à lire

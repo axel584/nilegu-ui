@@ -38,27 +38,60 @@ import {
   VolumeDown as VolumeDownIcon,
   VolumeOff as VolumeOffIcon
 } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTekstoDetaloj } from '../hooks/useTekstoj';
 import { Vorto } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from '../components/UserMenu';
-import { legitajxojService } from '../services/api';
+import { legitajxojService, authService } from '../services/api';
 import Footer from '../components/Footer';
+
+// Conseils pour l'utilisation du Comprehensible Input
+const COMPREHENSIBLE_INPUT_TIPS = [
+  "Ne traduisez pas systématiquement chaque mot. Essayez de comprendre le sens global d'abord.",
+  "Lisez à haute voix pour améliorer votre prononciation et votre fluidité.",
+  "Si vous ne comprenez pas un mot, continuez votre lecture. Le contexte vous aidera souvent à en deviner le sens.",
+  "Relisez le même texte plusieurs fois. Chaque lecture améliore votre compréhension.",
+  "Concentrez-vous sur le plaisir de lire plutôt que sur la perfection grammaticale.",
+  "Écoutez l'audio plusieurs fois, même sans regarder le texte, pour habituer votre oreille.",
+  "Variez les vitesses de lecture audio pour trouver celle qui vous convient le mieux.",
+  "Prenez des pauses régulières. L'apprentissage se fait aussi pendant le repos.",
+  "Notez mentalement les mots qui reviennent souvent, ils sont généralement importants.",
+  "Ne cherchez pas à tout comprendre à 100%. Même 70% de compréhension est un excellent résultat.",
+  "Lisez régulièrement, même 10 minutes par jour, plutôt qu'une longue session occasionnelle.",
+  "Choisissez des textes qui vous intéressent vraiment pour maintenir votre motivation.",
+  "Essayez de visualiser l'histoire pendant que vous lisez pour mieux mémoriser.",
+  "Écoutez le texte en fermant les yeux pour vous concentrer uniquement sur les sons.",
+  "Relisez un passage difficile après avoir terminé tout le texte, il sera souvent plus clair.",
+  "Connectez-vous avec votre compte Ikurso pour laisser une évaluation et un commentaire sur les textes que vous lisez.",
+  "Sauvegardez vos textes préférés dans votre liste personnelle en vous connectant, pour les retrouver facilement plus tard.",
+  "N'hésitez pas à contacter l'équipe de Ni legu pour leur proposer des textes à ajouter.",
+  "Utilisez les filtres du catalogue pour trier les textes par taille ou par difficulté et trouver celui qui correspond à votre niveau.",
+  "Si vous aimez l'enregistrement audio d'un lecteur, tapez son nom dans la recherche pour écouter tous ses textes.",
+  "Certains mots ne sont pas dans le dictionnaire, mais vous pouvez certainement comprendre leur sens en les décomposant.",
+  "Ne lisez pas une grammaire trop tôt, elle peut être utile pour comprendre certains points, mais commencez d'abord par lire.",
+  "Évitez d'apprendre des listes de vocabulaire par cœur. Les mots que vous rencontrez dans les textes se mémoriseront naturellement.",
+  "Pas besoin de faire des exercices de grammaire. Votre cerveau assimilera les structures en les rencontrant régulièrement dans les textes.",
+  "Ne transformez pas la lecture en exercice scolaire. Le simple fait de lire avec plaisir est le meilleur apprentissage.",
+  "Oubliez les flashcards et les listes de mots. Rencontrer le vocabulaire dans son contexte est bien plus efficace.",
+  "L'apprentissage par la lecture est naturel : faites confiance à votre cerveau pour acquérir la langue sans effort conscient."
+];
 
 const TextReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { teksto, loading, error } = useTekstoDetaloj(id || null);
   const { user, isAuthenticated } = useAuth();
-  
-  // Debug: vérifier la valeur de leganto
-  React.useEffect(() => {
-    if (teksto) {
-      console.log('teksto.leganto:', teksto.leganto);
-      console.log('teksto complet:', teksto);
-    }
-  }, [teksto]);
+
+  // Mode développeur
+  const isDevMode = searchParams.get('dev') === 'true';
+
+  // Conseil aléatoire pour le Comprehensible Input
+  const [randomTip] = useState(() =>
+    COMPREHENSIBLE_INPUT_TIPS[Math.floor(Math.random() * COMPREHENSIBLE_INPUT_TIPS.length)]
+  );
+
 
   // Enregistrer le début de lecture quand le texte est chargé
   React.useEffect(() => {
@@ -69,7 +102,7 @@ const TextReaderPage: React.FC = () => {
       });
     }
   }, [teksto, id, isAuthenticated]);
-  
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -77,12 +110,19 @@ const TextReaderPage: React.FC = () => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [volume, setVolume] = useState(1);
-  
+
   // États pour le formulaire d'avis
   const [rating, setRating] = useState<number | null>(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
+  // État pour la popup de connexion
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [identifiant, setIdentifiant] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const handleWordClick = (vorto: Vorto) => {
@@ -159,7 +199,7 @@ const TextReaderPage: React.FC = () => {
 
   const handleFinishText = async () => {
     if (!id || !isAuthenticated || !rating) return;
-    
+
     setIsSubmitting(true);
     try {
       await legitajxojService.finishText(id, rating, comment);
@@ -169,6 +209,37 @@ const TextReaderPage: React.FC = () => {
       console.error('Erreur lors de la soumission:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenLoginDialog = () => {
+    setShowLoginDialog(true);
+  };
+
+  const handleCloseLoginDialog = () => {
+    setShowLoginDialog(false);
+    setIdentifiant('');
+    setPassword('');
+    setLoginError('');
+  };
+
+  const handleLoginSubmit = async () => {
+    if (!identifiant || !password) return;
+
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const { user: loggedInUser, token } = await authService.login(identifiant, password);
+      // Sauvegarder les données utilisateur
+      localStorage.setItem('auth_user', JSON.stringify(loggedInUser));
+      handleCloseLoginDialog();
+      // Recharger la page pour mettre à jour l'état d'authentification
+      window.location.reload();
+    } catch (error: any) {
+      setLoginError(error.message || 'Erreur lors de la connexion');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -229,15 +300,20 @@ const TextReaderPage: React.FC = () => {
         return null;
       }
       
-      // Diviser le texte en mots et ponctuation
-      const words = text.split(/(\s+|[.,!?;:])/);
-      
+      // Diviser le texte en mots et ponctuation (incluant les points de suspension, tirets, parenthèses et guillemets)
+      const words = text.split(/(\s+|[.,!?;:…\-()'"«»\u201C\u201D\u2018\u2019‚„‹›`]+)/);
+
       const paragraphContent = words.map((word, index) => {
-        const cleanWord = word.replace(/[.,!?;:]/, '').toLowerCase();
+        const cleanWord = word.toLowerCase();
         const isKeyword = vortoSet.has(cleanWord);
         const hasTranslation = vortaro && vortaro[cleanWord];
+        const isClickable = (isKeyword || hasTranslation) && word.trim();
         
-        if ((isKeyword || hasTranslation) && word.trim()) {
+        // En mode dev, surligner en jaune les mots non-cliquables qui contiennent des lettres
+        const isWordWithLetters = /[a-zA-ZĈĜĤĴŜŬĉĝĥĵŝŭ]/.test(word);
+        const shouldHighlight = isDevMode && !isClickable && isWordWithLetters && word.trim() && !/^[.,!?;:…\-\s]+$/.test(word);
+        
+        if (isClickable) {
           return (
             <span
               key={`${textIndex}-${index}`}
@@ -267,6 +343,22 @@ const TextReaderPage: React.FC = () => {
             </span>
           );
         }
+        
+        if (shouldHighlight) {
+          return (
+            <span 
+              key={`${textIndex}-${index}`}
+              style={{ 
+                backgroundColor: 'yellow',
+                padding: '1px 2px',
+                borderRadius: '2px'
+              }}
+            >
+              {word}
+            </span>
+          );
+        }
+        
         return <span key={`${textIndex}-${index}`}>{word}</span>;
       });
       
@@ -320,7 +412,7 @@ const TextReaderPage: React.FC = () => {
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ mr: 1 }}>
+          <Typography variant="h6" component="div" sx={{ mr: 1 }} translate="no">
             {teksto.titolo}
           </Typography>
           <Chip
@@ -346,45 +438,91 @@ const TextReaderPage: React.FC = () => {
           <Link color="inherit" href="/catalog" underline="hover">
             Catalogue
           </Link>
-          <Typography color="text.primary">{teksto.titolo}</Typography>
+          <Typography color="text.primary" translate="no">{teksto.titolo}</Typography>
         </Breadcrumbs>
 
         {/* Informations du texte */}
         <Card sx={{ mb: 4 }}>
           <CardContent>
-            <Typography variant="h4" gutterBottom>
-              {teksto.titolo}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              par {teksto.aŭtoro}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <Chip label={`${teksto.longeco} mots`} size="small" />
-              <Chip 
-                label={getNiveloLabel(teksto.nivelo)} 
-                size="small" 
-                sx={{
-                  bgcolor: getNiveloColor(teksto.nivelo),
-                  color: 'white',
-                }}
-              />
-            </Box>
-            {teksto.priskribo && (
-              <Typography variant="body2" color="text.secondary">
-                {isUrl(teksto.priskribo) ? (
-                  <Link
-                    href={teksto.priskribo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{ color: 'primary.main', textDecoration: 'underline' }}
-                  >
-                    {teksto.priskribo}
-                  </Link>
-                ) : (
-                  teksto.priskribo
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              {/* Couverture du livre si arthur_id est disponible */}
+              {teksto.arthur_id && (
+                <Box
+                  component="a"
+                  href={teksto.priskribo || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    flexShrink: 0,
+                    cursor: teksto.priskribo ? 'pointer' : 'default',
+                    textDecoration: 'none'
+                  }}
+                  onClick={(e) => {
+                    if (!teksto.priskribo) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={`https://esperanto-france.org/couvertures/${teksto.arthur_id}.mini.jpg`}
+                    alt={`Couverture de ${teksto.titolo}`}
+                    sx={{
+                      width: 120,
+                      height: 'auto',
+                      borderRadius: 1,
+                      boxShadow: 2,
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      '&:hover': teksto.priskribo ? {
+                        transform: 'scale(1.05)',
+                        boxShadow: 3
+                      } : {}
+                    }}
+                    onError={(e) => {
+                      // Masquer l'image si elle ne peut pas être chargée
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Informations textuelles */}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h4" gutterBottom translate="no">
+                  {teksto.titolo}
+                </Typography>
+                <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                  par <span translate="no">{teksto.aŭtoro}</span>
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                  <Chip label={`${teksto.longeco} mots`} size="small" />
+                  <Chip
+                    label={getNiveloLabel(teksto.nivelo)}
+                    size="small"
+                    sx={{
+                      bgcolor: getNiveloColor(teksto.nivelo),
+                      color: 'white',
+                    }}
+                  />
+                </Box>
+                {teksto.priskribo && (
+                  <Typography variant="body2" color="text.secondary">
+                    {isUrl(teksto.priskribo) ? (
+                      <Link
+                        href={teksto.priskribo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                      >
+                        {teksto.priskribo}
+                      </Link>
+                    ) : (
+                      teksto.priskribo
+                    )}
+                  </Typography>
                 )}
-              </Typography>
-            )}
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
@@ -409,7 +547,7 @@ const TextReaderPage: React.FC = () => {
               </Box>
               {teksto.leganto && (
                 <Typography variant="body2" color="text.secondary">
-                  lu par {teksto.leganto}
+                  lu par <span translate="no">{teksto.leganto}</span>
                 </Typography>
               )}
             </Box>
@@ -506,12 +644,23 @@ const TextReaderPage: React.FC = () => {
               Comment utiliser cette page
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" paragraph>
             Cliquez sur les mots pour voir leur traduction.
             {teksto.sono && teksto.sono.trim() !== '' && (
               <> Écoutez l'audio en même temps que vous lisez pour améliorer votre prononciation.</>
             )}
           </Typography>
+          <Box sx={{
+            mt: 2,
+            p: 2,
+            bgcolor: 'white',
+            borderRadius: 1,
+            borderLeft: '4px solid #554E47'
+          }}>
+            <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.primary' }}>
+              💡 <strong>Conseil :</strong> {randomTip}
+            </Typography>
+          </Box>
         </Paper>
 
         {/* Texte */}
@@ -523,18 +672,19 @@ const TextReaderPage: React.FC = () => {
               fontSize: '1.1rem',
               textAlign: 'justify'
             }}
+            translate="no"
           >
             {renderText(teksto.enhavo, teksto.ŝlosilvortoj || [], teksto.vortaro)}
           </Typography>
         </Paper>
 
         {/* Formulaire d'avis */}
-        {isAuthenticated && (
+        {isAuthenticated ? (
           <Paper sx={{ p: 4 }}>
             <Typography variant="h6" gutterBottom>
               Mon avis sur ce texte :
             </Typography>
-            
+
             <Box sx={{ mb: 3 }}>
               <Typography component="legend" sx={{ mb: 1 }}>
                 Note :
@@ -548,7 +698,7 @@ const TextReaderPage: React.FC = () => {
                 size="large"
               />
             </Box>
-            
+
             <TextField
               multiline
               rows={3}
@@ -559,7 +709,7 @@ const TextReaderPage: React.FC = () => {
               sx={{ mb: 3 }}
               placeholder="Partagez votre avis sur ce texte..."
             />
-            
+
             <Button
               variant="contained"
               onClick={handleFinishText}
@@ -573,6 +723,29 @@ const TextReaderPage: React.FC = () => {
             >
               {isSubmitting ? 'Enregistrement...' : "J'ai fini ce texte"}
             </Button>
+          </Paper>
+        ) : (
+          <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f5f5f5' }}>
+            <Typography variant="body1" color="text.secondary">
+              Pour évaluer ce texte et laisser un commentaire,{' '}
+              <Link
+                component="button"
+                variant="body1"
+                onClick={handleOpenLoginDialog}
+                sx={{
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  color: '#554E47',
+                  fontWeight: 'bold',
+                  '&:hover': {
+                    color: '#433B35'
+                  }
+                }}
+              >
+                connectez-vous
+              </Link>
+              {' '}avec votre compte Ikurso
+            </Typography>
           </Paper>
         )}
       </Container>
@@ -593,7 +766,7 @@ const TextReaderPage: React.FC = () => {
         <DialogContent>
           {selectedWord && (
             <Box>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom translate="no">
                 {selectedWord.vorto}
               </Typography>
               <Typography variant="body1" color="text.secondary" gutterBottom>
@@ -608,6 +781,66 @@ const TextReaderPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialog de connexion */}
+      <Dialog
+        open={showLoginDialog}
+        onClose={handleCloseLoginDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Connectez-vous avec votre compte Ikurso</DialogTitle>
+        <DialogContent>
+          {loginError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {loginError}
+            </Alert>
+          )}
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Identifiant"
+            fullWidth
+            variant="outlined"
+            value={identifiant}
+            onChange={(e) => setIdentifiant(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Mot de passe"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isLoggingIn && identifiant && password) {
+                handleLoginSubmit();
+              }
+            }}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Si vous n'avez pas de compte ou que vous avez oublié votre mot de passe, rendez-vous sur{' '}
+            <a href="https://ikurso.esperanto-france.org" target="_blank" rel="noopener noreferrer">
+              https://ikurso.esperanto-france.org
+            </a>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseLoginDialog}>
+            Annuler
+          </Button>
+          <Button
+            onClick={handleLoginSubmit}
+            variant="contained"
+            disabled={isLoggingIn || !identifiant || !password}
+          >
+            {isLoggingIn ? 'Connexion...' : 'Se connecter'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Footer />
     </Box>
   );

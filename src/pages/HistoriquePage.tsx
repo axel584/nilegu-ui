@@ -24,7 +24,7 @@ const HistoriquePage: React.FC = () => {
   const { tekstoj, loading, error } = useReadTexts();
 
   const handleTekstoClick = (tekstoId: string) => {
-    navigate(`/text/${tekstoId}`);
+    navigate(`/teksto/${tekstoId}`);
   };
 
   // Fonction vide pour onSaveTeksto car on n'a pas besoin de cette fonctionnalité dans l'historique

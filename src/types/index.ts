@@ -11,6 +11,7 @@ export interface Texto {
   audioUrl?: string | null;
   sono?: string | null; // URL du fichier audio MP3
   leganto?: string | null; // Nom de la personne qui lit le texte
+  arthur_id?: string | null; // Identifiant du livre dans la base Arthur
 }
 
 export interface TextoDetaloj extends Texto {

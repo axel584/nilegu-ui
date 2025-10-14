@@ -3,7 +3,7 @@ import { Texto, TextoDetaloj, APIResponse, User } from '../types';
 import { PAGINATION_CONFIG } from '../config/constants';
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:8080/api.php'
+  ? 'https://ikurso.esperanto-france.org/api.php' // http://localhost:8080/api.php
   : 'https://ikurso.esperanto-france.org/api.php';
 
 // Fonction pour récupérer le token JWT
@@ -49,29 +49,29 @@ export const tekstojService = {
   getTekstoj: async (): Promise<Texto[]> => {
     try {
       const response = await api.get('?path=tekstoj');
-      console.log('API Response:', response.data);
-      
+
       // L'API retourne un objet avec une propriété 'data' contenant le tableau
       if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
         // Transformer les données pour correspondre à notre interface Texto
-        const tekstoj = response.data.data.map((item: any) => ({
-          id: item.id,
-          titolo: item.titolo,
-          aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
-          nivelo: item.nivelo,
-          longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
-          priskribo: item.fonto, // Utiliser la source comme description
-          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
-          audioUrl: item.sono || null,
-          sono: item.sono || null,
-          leganto: item.leganto || null // Inclure le nom de la personne qui lit
-        }));
-        
-        console.log('Transformed data:', tekstoj);
+        const tekstoj = response.data.data.map((item: any) => {
+          return {
+            id: item.id,
+            titolo: item.titolo,
+            aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
+            nivelo: item.nivelo,
+            longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
+            priskribo: item.fonto, // Utiliser la source comme description
+            ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
+            audioUrl: item.sono || null,
+            sono: item.sono || null,
+            leganto: item.leganto || null, // Inclure le nom de la personne qui lit
+            arthur_id: item.arthur_id || null // Identifiant du livre dans la base Arthur
+          };
+        });
+
         return tekstoj;
       }
-      
-      console.warn('Format de données non reconnu, retour d\'un tableau vide');
+
       return [];
     } catch (error) {
       console.error('Erreur lors de la récupération des textes:', error);
@@ -83,8 +83,7 @@ export const tekstojService = {
   getTekstoDetaloj: async (id: string): Promise<TextoDetaloj> => {
     try {
       const response = await api.get(`?path=tekstoj/${id}`);
-      console.log('Teksto detaloj response:', response.data);
-      
+
       // S'assurer que les données sont correctement formatées
       const data = response.data;
       if (data && typeof data === 'object') {
@@ -103,13 +102,13 @@ export const tekstojService = {
           traduko: data.traduko || undefined,
           notoj: data.notoj || undefined,
           vortaro: Array.isArray(data.enhavo) ? data.enhavo.reduce((acc: any, section: any) => ({ ...acc, ...section.vortaro }), {}) : (data.vortaro || undefined),
-          leganto: data.leganto || null
+          leganto: data.leganto || null,
+          arthur_id: data.arthur_id || null
         };
-        
-        console.log('Transformed teksto detaloj:', tekstoDetaloj);
+
         return tekstoDetaloj;
       }
-      
+
       throw new Error('Format de données invalide');
     } catch (error) {
       console.error(`Erreur lors de la récupération du texte ${id}:`, error);
@@ -166,37 +165,34 @@ export const tekstojService = {
       if (filtroj.hasSono) {
         apiParams.has_sono = 'true';
       }
-      
+
       // Gestion de l'ordre de tri
       if (filtroj.order && filtroj.sort) {
         apiParams.sort = filtroj.order;  // Le champ à trier
         apiParams.order = filtroj.sort;  // ASC ou DESC
       }
-      
-      console.log('API params:', apiParams);
-      
+
       // Toujours utiliser les paramètres avec offset pour la pagination
       const response = await api.get('?path=tekstoj', { params: apiParams });
-      
-      console.log('Search API Response:', response.data);
-      
+
       // L'API retourne un objet avec une propriété 'data' contenant le tableau
       if (response.data && typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
         // Transformer les données APITeksto vers Texto
-        const tekstoj = response.data.data.map((item: any) => ({
-          id: item.id,
-          titolo: item.titolo,
-          aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
-          nivelo: item.nivelo,
-          longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
-          priskribo: item.fonto, // Utiliser la source comme description
-          ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
-          audioUrl: item.sono || null,
-          sono: item.sono || null,
-          leganto: item.leganto || null // Inclure le nom de la personne qui lit
-        }));
-        
-        console.log('Transformed search data:', tekstoj);
+        const tekstoj = response.data.data.map((item: any) => {
+          return {
+            id: item.id,
+            titolo: item.titolo,
+            aŭtoro: item.auxtoro || item.aŭtoro, // Note: l'API utilise 'auxtoro' au lieu de 'aŭtoro'
+            nivelo: item.nivelo,
+            longeco: parseInt(item.vortoj) || 0, // 'vortoj' contient le nombre de mots
+            priskribo: item.fonto, // Utiliser la source comme description
+            ŝlosilvortoj: item.etikedoj ? item.etikedoj.split(',').map((tag: string) => tag.trim()) : [],
+            audioUrl: item.sono || null,
+            sono: item.sono || null,
+            leganto: item.leganto || null, // Inclure le nom de la personne qui lit
+            arthur_id: item.arthur_id || null // Identifiant du livre dans la base Arthur
+          };
+        });
         
         // Retourner la structure APIResponse avec pagination
         return {
@@ -209,8 +205,7 @@ export const tekstojService = {
           }
         };
       }
-      
-      console.warn('Format de données non reconnu, retour d\'un tableau vide');
+
       return {
         data: [],
         pagination: {
@@ -365,6 +360,34 @@ export const legitajxojService = {
     } catch (error: any) {
       console.error('Get read texts error:', error);
       throw new Error('Erreur lors du chargement de l\'historique des lectures');
+    }
+  }
+};
+
+export const profilService = {
+  // Récupérer le profil détaillé d'un utilisateur
+  getProfil: async (userId: string): Promise<any> => {
+    try {
+      const response = await api.get(`?path=personoj/${userId}`);
+      console.log('Profile response:', response.data);
+      
+      if (response.data && response.data.data) {
+        return response.data.data;
+      }
+      
+      throw new Error('Données de profil non trouvées');
+    } catch (error: any) {
+      console.error('Profile fetch error:', error);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.status === 404) {
+        throw new Error('Profil non trouvé');
+      } else if (error.response?.status === 403) {
+        throw new Error('Accès non autorisé au profil');
+      } else {
+        throw new Error('Erreur lors du chargement du profil');
+      }
     }
   }
 };

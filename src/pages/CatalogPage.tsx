@@ -16,7 +16,7 @@ import {
 import {
   Book as BookIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTekstojSearch } from '../hooks/useTekstoj';
 import { Filtroj } from '../types';
 import SearchForm from '../components/SearchForm';
@@ -27,21 +27,26 @@ import { legotajxojService } from '../services/api';
 
 const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { tekstoj, loading, error, pagination, searchTekstoj } = useTekstojSearch({ skipInitialLoad: true });
   const { user, isAuthenticated } = useAuth();
   
-  const [filtroj, setFiltroj] = useState<Filtroj>({
-    serĉo: '',
-    nivelo: '',
-    longecoMin: DEFAULT_FILTERS.LONGECO_MIN,
-    longecoMax: DEFAULT_FILTERS.LONGECO_MAX,
-    ŝlosilvortoj: [],
-    hasSono: false,
-    order: DEFAULT_FILTERS.ORDER,
-    sort: DEFAULT_FILTERS.SORT
-  });
-
-  const [currentPage, setCurrentPage] = useState(1);
+  // Initialiser les filtres depuis l'URL
+  const getInitialFilters = (): Filtroj => {
+    return {
+      serĉo: searchParams.get('search') || '',
+      nivelo: searchParams.get('level') || '',
+      longecoMin: parseInt(searchParams.get('minLength') || '') || DEFAULT_FILTERS.LONGECO_MIN,
+      longecoMax: parseInt(searchParams.get('maxLength') || '') || DEFAULT_FILTERS.LONGECO_MAX,
+      ŝlosilvortoj: searchParams.get('keywords') ? searchParams.get('keywords')!.split(',') : [],
+      hasSono: searchParams.get('hasAudio') === 'true',
+      order: searchParams.get('order') || DEFAULT_FILTERS.ORDER,
+      sort: searchParams.get('sort') || DEFAULT_FILTERS.SORT
+    };
+  };
+  
+  const [filtroj, setFiltroj] = useState<Filtroj>(getInitialFilters);
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const prevFiltrojRef = useRef<Filtroj>(filtroj);
   const [savedTekstoj, setSavedTekstoj] = useState<Set<string>>(new Set());
   const [snackbar, setSnackbar] = useState<{
@@ -54,6 +59,23 @@ const CatalogPage: React.FC = () => {
     severity: 'success'
   });
 
+  // Fonction pour mettre à jour l'URL avec les paramètres de recherche
+  const updateUrlParams = (newFiltroj: Filtroj, page: number = 1) => {
+    const params = new URLSearchParams();
+    
+    if (newFiltroj.serĉo) params.set('search', newFiltroj.serĉo);
+    if (newFiltroj.nivelo) params.set('level', newFiltroj.nivelo);
+    if (newFiltroj.longecoMin !== DEFAULT_FILTERS.LONGECO_MIN) params.set('minLength', newFiltroj.longecoMin.toString());
+    if (newFiltroj.longecoMax !== DEFAULT_FILTERS.LONGECO_MAX) params.set('maxLength', newFiltroj.longecoMax.toString());
+    if (newFiltroj.ŝlosilvortoj.length > 0) params.set('keywords', newFiltroj.ŝlosilvortoj.join(','));
+    if (newFiltroj.hasSono) params.set('hasAudio', 'true');
+    if (newFiltroj.order !== DEFAULT_FILTERS.ORDER) params.set('order', newFiltroj.order);
+    if (newFiltroj.sort !== DEFAULT_FILTERS.SORT) params.set('sort', newFiltroj.sort);
+    if (page > 1) params.set('page', page.toString());
+    
+    setSearchParams(params);
+  };
+
   // Gérer les changements de filtres et pagination
   useEffect(() => {
     // Vérifier si les filtres ont changé (pas seulement la page)
@@ -62,9 +84,13 @@ const CatalogPage: React.FC = () => {
     // Si les filtres ont changé, réinitialiser la page à 1
     if (filtersChanged && currentPage !== 1) {
       setCurrentPage(1);
+      updateUrlParams(filtroj, 1);
       prevFiltrojRef.current = filtroj;
       return; // Sortir maintenant, le useEffect sera rappelé avec currentPage = 1
     }
+    
+    // Mettre à jour l'URL avec les nouveaux paramètres
+    updateUrlParams(filtroj, currentPage);
     
     // Mettre à jour la référence
     prevFiltrojRef.current = filtroj;
@@ -115,6 +141,8 @@ const CatalogPage: React.FC = () => {
     };
     setFiltroj(defaultFiltroj);
     setCurrentPage(1);
+    // Nettoyer l'URL
+    setSearchParams(new URLSearchParams());
     // Le useEffect se chargera automatiquement de faire l'appel API
   };
 

@@ -8,6 +8,7 @@ import CatalogPage from './pages/CatalogPage';
 import TextReaderPage from './pages/TextReaderPage';
 import HistoriquePage from './pages/HistoriquePage';
 import ListeALirePage from './pages/ListeALirePage';
+import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './contexts/AuthContext';
 
 // Étendre les variantes typographiques
@@ -94,7 +95,11 @@ function Analytics() {
   const location = useLocation();
 
   useEffect(() => {
-    ReactGA.send({ hitType: "pageview", page: location.pathname + location.search });
+    ReactGA.gtag('event', 'page_view', {
+      page_title: document.title,
+      page_location: window.location.href,
+      page_path: location.pathname + location.search
+    });
   }, [location]);
 
   return null;
@@ -113,6 +118,7 @@ function App() {
             <Route path="/teksto/:id" element={<TextReaderPage />} />
             <Route path="/historique" element={<HistoriquePage />} />
             <Route path="/liste-a-lire" element={<ListeALirePage />} />
+            <Route path="/profil" element={<ProfilePage />} />
           </Routes>
         </Router>
       </AuthProvider>
