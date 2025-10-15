@@ -22,6 +22,7 @@ import {
   Sort as SortIcon
 } from '@mui/icons-material';
 import { Filtroj } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface SearchFormProps {
   filtroj: Filtroj;
@@ -34,6 +35,8 @@ const SearchForm: React.FC<SearchFormProps> = ({
   onFiltroj,
   onClearFiltroj
 }) => {
+  const { t } = useTranslation();
+
   const handleSerĉoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFiltroj({ ...filtroj, serĉo: event.target.value });
   };
@@ -60,7 +63,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
     <Paper sx={{ p: 3, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <FilterIcon sx={{ mr: 1 }} />
-        <Typography variant="h6">Filtres de recherche</Typography>
+        <Typography variant="h6">{t('catalog.filters')}</Typography>
       </Box>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -68,7 +71,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
         <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
           <TextField
             fullWidth
-            label="Rechercher par titre, auteur ou mots-clés"
+            label={t('catalog.search')}
             value={filtroj.serĉo}
             onChange={handleSerĉoChange}
             InputProps={{
@@ -91,16 +94,16 @@ const SearchForm: React.FC<SearchFormProps> = ({
         {/* Niveau */}
         <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
           <FormControl fullWidth>
-            <InputLabel>Niveau</InputLabel>
+            <InputLabel>{t('catalog.level')}</InputLabel>
             <Select
               value={filtroj.nivelo}
-              label="Niveau"
+              label={t('catalog.level')}
               onChange={handleNiveloChange}
             >
-              <MenuItem value="">Tous les niveaux</MenuItem>
-              <MenuItem value="facile">Facile</MenuItem>
-              <MenuItem value="intermediaire">Intermédiaire</MenuItem>
-              <MenuItem value="avance">Avancé</MenuItem>
+              <MenuItem value="">{t('catalog.allLevels')}</MenuItem>
+              <MenuItem value="facile">{t('common.beginner')}</MenuItem>
+              <MenuItem value="intermediaire">{t('common.intermediate')}</MenuItem>
+              <MenuItem value="avance">{t('common.advanced')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -108,18 +111,17 @@ const SearchForm: React.FC<SearchFormProps> = ({
         {/* Ordre de tri */}
         <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
           <FormControl fullWidth>
-            <InputLabel>Trier par</InputLabel>
+            <InputLabel>{t('catalog.sortBy')}</InputLabel>
             <Select
               value={`${filtroj.order}|${filtroj.sort}`}
-              label="Trier par"
+              label={t('catalog.sortBy')}
               onChange={handleOrderChange}
             >
-              <MenuItem value="ekdato|DESC">Les plus récents</MenuItem>
-              <MenuItem value="nivelo|ASC">Les plus faciles</MenuItem>
-              <MenuItem value="nivelo|DESC">Les plus difficiles</MenuItem>
-              <MenuItem value="vortoj|ASC">Les plus courts</MenuItem>
-              <MenuItem value="vortoj|DESC">Les plus longs</MenuItem>
-              <MenuItem value="titolo|ASC">Ordre alphabétique</MenuItem>
+              <MenuItem value="ekdato|DESC">{t('catalog.newest')}</MenuItem>
+              <MenuItem value="nivelo|ASC">{t('catalog.shortest')}</MenuItem>
+              <MenuItem value="nivelo|DESC">{t('catalog.longest')}</MenuItem>
+              <MenuItem value="vortoj|ASC">{t('catalog.shortest')}</MenuItem>
+              <MenuItem value="vortoj|DESC">{t('catalog.longest')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -127,7 +129,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
 
       {/* Longueur */}
       <Box sx={{ mt: 3 }}>
-        <Typography gutterBottom>Longueur du texte (mots)</Typography>
+        <Typography gutterBottom>{t('catalog.textLength')}</Typography>
         <Slider
           value={[filtroj.longecoMin, filtroj.longecoMax]}
           onChange={handleLongecoChange}
@@ -137,8 +139,8 @@ const SearchForm: React.FC<SearchFormProps> = ({
           step={50}
         />
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2">{filtroj.longecoMin} mots</Typography>
-          <Typography variant="body2">{filtroj.longecoMax} mots</Typography>
+          <Typography variant="body2">{filtroj.longecoMin} {t('common.words')}</Typography>
+          <Typography variant="body2">{filtroj.longecoMax} {t('common.words')}</Typography>
         </Box>
       </Box>
 
@@ -152,7 +154,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
               color="primary"
             />
           }
-          label="Contient un enregistrement sonore"
+          label={t('catalog.withAudio')}
         />
       </Box>
 
@@ -163,7 +165,7 @@ const SearchForm: React.FC<SearchFormProps> = ({
           onClick={onClearFiltroj}
           startIcon={<ClearIcon />}
         >
-          Réinitialiser les filtres
+          {t('catalog.clearFilters')}
         </Button>
       </Box>
     </Paper>

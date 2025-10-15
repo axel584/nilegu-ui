@@ -45,41 +45,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from '../components/UserMenu';
 import { legitajxojService, authService } from '../services/api';
 import Footer from '../components/Footer';
-
-// Conseils pour l'utilisation du Comprehensible Input
-const COMPREHENSIBLE_INPUT_TIPS = [
-  "Ne traduisez pas systématiquement chaque mot. Essayez de comprendre le sens global d'abord.",
-  "Lisez à haute voix pour améliorer votre prononciation et votre fluidité.",
-  "Si vous ne comprenez pas un mot, continuez votre lecture. Le contexte vous aidera souvent à en deviner le sens.",
-  "Relisez le même texte plusieurs fois. Chaque lecture améliore votre compréhension.",
-  "Concentrez-vous sur le plaisir de lire plutôt que sur la perfection grammaticale.",
-  "Écoutez l'audio plusieurs fois, même sans regarder le texte, pour habituer votre oreille.",
-  "Variez les vitesses de lecture audio pour trouver celle qui vous convient le mieux.",
-  "Prenez des pauses régulières. L'apprentissage se fait aussi pendant le repos.",
-  "Notez mentalement les mots qui reviennent souvent, ils sont généralement importants.",
-  "Ne cherchez pas à tout comprendre à 100%. Même 70% de compréhension est un excellent résultat.",
-  "Lisez régulièrement, même 10 minutes par jour, plutôt qu'une longue session occasionnelle.",
-  "Choisissez des textes qui vous intéressent vraiment pour maintenir votre motivation.",
-  "Essayez de visualiser l'histoire pendant que vous lisez pour mieux mémoriser.",
-  "Écoutez le texte en fermant les yeux pour vous concentrer uniquement sur les sons.",
-  "Relisez un passage difficile après avoir terminé tout le texte, il sera souvent plus clair.",
-  "Connectez-vous avec votre compte Ikurso pour laisser une évaluation et un commentaire sur les textes que vous lisez.",
-  "Sauvegardez vos textes préférés dans votre liste personnelle en vous connectant, pour les retrouver facilement plus tard.",
-  "N'hésitez pas à contacter l'équipe de Ni legu pour leur proposer des textes à ajouter.",
-  "Utilisez les filtres du catalogue pour trier les textes par taille ou par difficulté et trouver celui qui correspond à votre niveau.",
-  "Si vous aimez l'enregistrement audio d'un lecteur, tapez son nom dans la recherche pour écouter tous ses textes.",
-  "Certains mots ne sont pas dans le dictionnaire, mais vous pouvez certainement comprendre leur sens en les décomposant.",
-  "Ne lisez pas une grammaire trop tôt, elle peut être utile pour comprendre certains points, mais commencez d'abord par lire.",
-  "Évitez d'apprendre des listes de vocabulaire par cœur. Les mots que vous rencontrez dans les textes se mémoriseront naturellement.",
-  "Pas besoin de faire des exercices de grammaire. Votre cerveau assimilera les structures en les rencontrant régulièrement dans les textes.",
-  "Ne transformez pas la lecture en exercice scolaire. Le simple fait de lire avec plaisir est le meilleur apprentissage.",
-  "Oubliez les flashcards et les listes de mots. Rencontrer le vocabulaire dans son contexte est bien plus efficace.",
-  "L'apprentissage par la lecture est naturel : faites confiance à votre cerveau pour acquérir la langue sans effort conscient."
-];
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
 
 const TextReaderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { teksto, loading, error } = useTekstoDetaloj(id || null);
   const { user, isAuthenticated } = useAuth();
@@ -88,9 +60,10 @@ const TextReaderPage: React.FC = () => {
   const isDevMode = searchParams.get('dev') === 'true';
 
   // Conseil aléatoire pour le Comprehensible Input
-  const [randomTip] = useState(() =>
-    COMPREHENSIBLE_INPUT_TIPS[Math.floor(Math.random() * COMPREHENSIBLE_INPUT_TIPS.length)]
-  );
+  const [randomTip] = useState(() => {
+    const tips = t('reader.tips', { returnObjects: true }) as string[];
+    return tips[Math.floor(Math.random() * tips.length)];
+  });
 
 
   // Enregistrer le début de lecture quand le texte est chargé
@@ -263,15 +236,15 @@ const TextReaderPage: React.FC = () => {
 
   const getNiveloLabel = (nivelo: string | number) => {
     const niveauNum = typeof nivelo === 'string' ? parseInt(nivelo, 10) : nivelo;
-    
+
     if (niveauNum >= 0 && niveauNum <= 999) {
-      return 'Facile';
+      return t('common.beginner');
     } else if (niveauNum >= 1000 && niveauNum <= 1999) {
-      return 'Intermédiaire';
+      return t('common.intermediate');
     } else if (niveauNum >= 2000) {
-      return 'Avancé';
+      return t('common.advanced');
     }
-    
+
     return nivelo; // Retourne la valeur originale si elle ne correspond à aucun critère
   };
 
@@ -393,7 +366,7 @@ const TextReaderPage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="warning">
-          Texte non trouvé
+          {t('reader.textNotFound')}
         </Alert>
       </Container>
     );
@@ -425,6 +398,9 @@ const TextReaderPage: React.FC = () => {
             }}
           />
           <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ mr: 2 }}>
+            <LanguageSelector />
+          </Box>
           <UserMenu user={isAuthenticated && user ? user : undefined} />
         </Toolbar>
       </AppBar>
@@ -433,10 +409,10 @@ const TextReaderPage: React.FC = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
           <Link color="inherit" href="/" underline="hover">
-            Accueil
+            {t('common.home')}
           </Link>
           <Link color="inherit" href="/catalog" underline="hover">
-            Catalogue
+            {t('common.catalog')}
           </Link>
           <Typography color="text.primary" translate="no">{teksto.titolo}</Typography>
         </Breadcrumbs>
@@ -492,10 +468,10 @@ const TextReaderPage: React.FC = () => {
                   {teksto.titolo}
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                  par <span translate="no">{teksto.aŭtoro}</span>
+                  {t('reader.by')} <span translate="no">{teksto.aŭtoro}</span>
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                  <Chip label={`${teksto.longeco} mots`} size="small" />
+                  <Chip label={`${teksto.longeco} ${t('common.words')}`} size="small" />
                   <Chip
                     label={getNiveloLabel(teksto.nivelo)}
                     size="small"
@@ -543,11 +519,11 @@ const TextReaderPage: React.FC = () => {
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <VolumeIcon sx={{ mr: 1 }} />
-                <Typography variant="h6">Écouter le texte</Typography>
+                <Typography variant="h6">{t('reader.listenToText')}</Typography>
               </Box>
               {teksto.leganto && (
                 <Typography variant="body2" color="text.secondary">
-                  lu par <span translate="no">{teksto.leganto}</span>
+                  {t('reader.readBy')} <span translate="no">{teksto.leganto}</span>
                 </Typography>
               )}
             </Box>
@@ -577,9 +553,9 @@ const TextReaderPage: React.FC = () => {
                 <StopIcon />
               </IconButton>
               
-              <IconButton 
+              <IconButton
                 onClick={handleRewind5Seconds}
-                title="Revenir 5 secondes en arrière"
+                title={t('reader.rewind5')}
               >
                 <Replay5Icon />
               </IconButton>
@@ -641,13 +617,13 @@ const TextReaderPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
             <TranslateIcon sx={{ mr: 1, color: '#554E47' }} />
             <Typography variant="h6" sx={{ color: '#554E47' }}>
-              Comment utiliser cette page
+              {t('reader.howToUse')}
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Cliquez sur les mots pour voir leur traduction.
+            {t('reader.instructions')}
             {teksto.sono && teksto.sono.trim() !== '' && (
-              <> Écoutez l'audio en même temps que vous lisez pour améliorer votre prononciation.</>
+              <>{t('reader.instructionsWithAudio')}</>
             )}
           </Typography>
           <Box sx={{
@@ -658,7 +634,7 @@ const TextReaderPage: React.FC = () => {
             borderLeft: '4px solid #554E47'
           }}>
             <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.primary' }}>
-              💡 <strong>Conseil :</strong> {randomTip}
+              💡 <strong>{t('reader.tip')} :</strong> {randomTip}
             </Typography>
           </Box>
         </Paper>
@@ -682,12 +658,12 @@ const TextReaderPage: React.FC = () => {
         {isAuthenticated ? (
           <Paper sx={{ p: 4 }}>
             <Typography variant="h6" gutterBottom>
-              Mon avis sur ce texte :
+              {t('reader.myReview')}
             </Typography>
 
             <Box sx={{ mb: 3 }}>
               <Typography component="legend" sx={{ mb: 1 }}>
-                Note :
+                {t('reader.rating')}
               </Typography>
               <Rating
                 name="text-rating"
@@ -703,11 +679,11 @@ const TextReaderPage: React.FC = () => {
               multiline
               rows={3}
               fullWidth
-              label="Votre commentaire (optionnel)"
+              label={t('reader.commentLabel')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               sx={{ mb: 3 }}
-              placeholder="Partagez votre avis sur ce texte..."
+              placeholder={t('reader.commentPlaceholder')}
             />
 
             <Button
@@ -721,13 +697,13 @@ const TextReaderPage: React.FC = () => {
                 py: 1.5
               }}
             >
-              {isSubmitting ? 'Enregistrement...' : "J'ai fini ce texte"}
+              {isSubmitting ? t('reader.saving') : t('reader.finishText')}
             </Button>
           </Paper>
         ) : (
           <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f5f5f5' }}>
             <Typography variant="body1" color="text.secondary">
-              Pour évaluer ce texte et laisser un commentaire,{' '}
+              {t('reader.loginToReview')}{' '}
               <Link
                 component="button"
                 variant="body1"
@@ -742,9 +718,9 @@ const TextReaderPage: React.FC = () => {
                   }
                 }}
               >
-                connectez-vous
+                {t('reader.loginLink')}
               </Link>
-              {' '}avec votre compte Ikurso
+              {' '}{t('reader.loginWith')}
             </Typography>
           </Paper>
         )}
@@ -760,7 +736,7 @@ const TextReaderPage: React.FC = () => {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TranslateIcon sx={{ mr: 1 }} />
-            Traduction
+            {t('reader.translation')}
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -770,14 +746,14 @@ const TextReaderPage: React.FC = () => {
                 {selectedWord.vorto}
               </Typography>
               <Typography variant="body1" color="text.secondary" gutterBottom>
-                <strong>Traduction :</strong> {selectedWord.traduko}
+                <strong>{t('reader.translationLabel')}</strong> {selectedWord.traduko}
               </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseTranslation}>
-            Fermer
+            {t('common.close')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -789,7 +765,7 @@ const TextReaderPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Connectez-vous avec votre compte Ikurso</DialogTitle>
+        <DialogTitle>{t('reader.loginTitle')}</DialogTitle>
         <DialogContent>
           {loginError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -799,7 +775,7 @@ const TextReaderPage: React.FC = () => {
           <TextField
             autoFocus
             margin="dense"
-            label="Identifiant"
+            label={t('reader.username')}
             fullWidth
             variant="outlined"
             value={identifiant}
@@ -808,7 +784,7 @@ const TextReaderPage: React.FC = () => {
           />
           <TextField
             margin="dense"
-            label="Mot de passe"
+            label={t('reader.password')}
             type="password"
             fullWidth
             variant="outlined"
@@ -821,7 +797,7 @@ const TextReaderPage: React.FC = () => {
             }}
           />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Si vous n'avez pas de compte ou que vous avez oublié votre mot de passe, rendez-vous sur{' '}
+            {t('reader.noAccount')}{' '}
             <a href="https://ikurso.esperanto-france.org" target="_blank" rel="noopener noreferrer">
               https://ikurso.esperanto-france.org
             </a>
@@ -829,14 +805,14 @@ const TextReaderPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseLoginDialog}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleLoginSubmit}
             variant="contained"
             disabled={isLoggingIn || !identifiant || !password}
           >
-            {isLoggingIn ? 'Connexion...' : 'Se connecter'}
+            {isLoggingIn ? t('reader.loggingIn') : t('reader.login')}
           </Button>
         </DialogActions>
       </Dialog>

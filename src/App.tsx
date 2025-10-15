@@ -10,6 +10,7 @@ import HistoriquePage from './pages/HistoriquePage';
 import ListeALirePage from './pages/ListeALirePage';
 import ProfilePage from './pages/ProfilePage';
 import { AuthProvider } from './contexts/AuthContext';
+import './i18n';
 
 // Étendre les variantes typographiques
 declare module '@mui/material/styles' {

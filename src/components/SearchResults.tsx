@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Texto } from '../types';
 import TextCard from './TextCard';
+import { useTranslation } from 'react-i18next';
 
 interface SearchResultsProps {
   tekstoj: Texto[];
@@ -37,6 +38,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   onSaveTeksto,
   savedTekstoj
 }) => {
+  const { t } = useTranslation();
+
   // Calculer le nombre total de pages
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
@@ -61,10 +64,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       {/* Résultats */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" gutterBottom>
-          {pagination.total} texte{pagination.total !== 1 ? 's' : ''} trouvé{pagination.total !== 1 ? 's' : ''}
+          {pagination.total} {pagination.total !== 1 ? t('catalog.textsFound_plural') : t('catalog.textsFound')}
           {pagination.total > pagination.limit && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Affichage de {pagination.offset + 1} à {pagination.offset + pagination.count} sur {pagination.total} résultats
+              {t('catalog.showing')} {pagination.offset + 1} {t('catalog.to')} {pagination.offset + pagination.count} {t('catalog.on')} {pagination.total} {t('catalog.results')}
             </Typography>
           )}
         </Typography>
@@ -102,10 +105,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       {tekstoj.length === 0 && !loading && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Aucun texte trouvé
+            {t('catalog.noResults')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Essayez de modifier vos critères de recherche
+            {t('catalog.noResultsHint')}
           </Typography>
         </Box>
       )}

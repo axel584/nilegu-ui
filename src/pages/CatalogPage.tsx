@@ -24,9 +24,12 @@ import SearchResults from '../components/SearchResults';
 import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from '../components/UserMenu';
 import { legotajxojService } from '../services/api';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
 
 const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { tekstoj, loading, error, pagination, searchTekstoj } = useTekstojSearch({ skipInitialLoad: true });
   const { user, isAuthenticated } = useAuth();
@@ -158,25 +161,25 @@ const CatalogPage: React.FC = () => {
     if (!isAuthenticated) {
       setSnackbar({
         open: true,
-        message: 'Vous devez être connecté pour sauvegarder un texte',
+        message: t('catalog.loginRequired'),
         severity: 'error'
       });
       return;
     }
-    
+
     try {
       await legotajxojService.saveTeksto(tekstoId);
       setSavedTekstoj(prev => new Set(prev).add(tekstoId));
       setSnackbar({
         open: true,
-        message: 'Texte sauvegardé avec succès !',
+        message: t('catalog.textSaved'),
         severity: 'success'
       });
     } catch (error: any) {
       console.error('Erreur lors de la sauvegarde:', error);
       setSnackbar({
         open: true,
-        message: error.message || 'Erreur lors de la sauvegarde du texte',
+        message: error.message || t('catalog.saveError'),
         severity: 'error'
       });
     }
@@ -192,10 +195,10 @@ const CatalogPage: React.FC = () => {
       {/* AppBar */}
       <AppBar position="static" sx={{ bgcolor: '#554E47', borderRadius: 0 }}>
         <Toolbar>
-          <Typography 
-            variant="appTitle" 
-            component="div" 
-            sx={{ 
+          <Typography
+            variant="appTitle"
+            component="div"
+            sx={{
               cursor: 'pointer',
               color: 'white',
               fontSize: '2rem',
@@ -205,6 +208,9 @@ const CatalogPage: React.FC = () => {
           >
             Ni legu
           </Typography>
+          <Box sx={{ mr: 2 }}>
+            <LanguageSelector />
+          </Box>
           <UserMenu user={isAuthenticated && user ? user : undefined} />
         </Toolbar>
       </AppBar>
@@ -213,9 +219,9 @@ const CatalogPage: React.FC = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
           <Link color="inherit" href="/" underline="hover">
-            Accueil
+            {t('common.home')}
           </Link>
-          <Typography color="text.primary">Catalogue</Typography>
+          <Typography color="text.primary">{t('catalog.breadcrumb')}</Typography>
         </Breadcrumbs>
 
         {/* Formulaire de recherche */}
